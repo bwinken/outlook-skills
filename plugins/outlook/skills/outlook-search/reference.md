@@ -92,9 +92,20 @@ Rules:
 Presentation: same table as 2a with an extra leading `分數` column (two decimals), sorted by score. Add one line above the table:
 
 ```
-已用 {Model} 對 {Candidates} 封候選郵件重新排序（{Batches} 批），最相關的前 {Count} 封：
+已用 {Model} 對 {Candidates} 封候選郵件重新排序（{Batches} 批），最相關的前 {shown} 封：
 ```
 
+How many to return and show:
+
+| Situation | `--top` | Show |
+|---|---|---|
+| Default ("find the mails about X") | 10 | up to 10 rows |
+| User wants one specific mail ("the mail where they confirmed the price") | 5 | top 3 rows, then open the best hit with `-IncludeBody` and answer from it |
+| User wants everything on a topic ("all mails about the audit") | 30 | all rows above the cut-off, in a table; offer the rest |
+
+Score cut-off, applied after `--top`: let `best` be the highest score. Hide rows whose score is below `0.3 × best`, and never show a row below 0.05 on an absolute scale. Say how many were hidden, e.g. `另外 6 封分數明顯偏低，已略過`. If `best` itself is below 0.2, say the match is weak and show at most 5 rows.
+
 Rules:
-- Scores from bge-reranker-v2-m3 are not probabilities; show them for relative comparison only. If the best score is low (e.g. below 0.2) say the match is weak.
+- Scores from bge-reranker-v2-m3 are not probabilities; show them for relative comparison only.
 - Mention when the candidate set was cut by `-Max`: a relevant mail older than the window will not appear.
+- Reranked rows keep their `EntryID`; hand the best one to `outlook-thread` when the user wants the whole conversation.
