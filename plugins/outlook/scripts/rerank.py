@@ -9,19 +9,22 @@ Usage:
     python rerank.py --query "上次跟供應商談價格的信" --input candidates.json --top 10
     python rerank.py --query "..." --input candidates.json --gateway http://gw:8000/v1 --model bge-reranker-v2-m3
 
-Configuration lookup order (first hit wins):
-    1. CLI: --gateway / --model / --api-key
-    2. Environment: OUTLOOK_RERANK_URL / OUTLOOK_RERANK_MODEL / OUTLOOK_RERANK_API_KEY
-    3. ~/.claude/settings.json -> "env": { same keys as above }
-       fallbacks inside settings.json: OPENAI_BASE_URL or ANTHROPIC_BASE_URL for the URL,
-       OPENAI_API_KEY or ANTHROPIC_AUTH_TOKEN for the key
-    Model defaults to bge-reranker-v2-m3.
+Configuration (CLI flag, else process environment, else "env" block of ~/.claude/settings.json):
+    gateway : OUTLOOK_RERANK_URL (explicit override)  >  ANTHROPIC_BASE_URL (the default: the same
+              gateway Claude Code already talks to)  >  OPENAI_BASE_URL
+    model   : OUTLOOK_RERANK_MODEL, default bge-reranker-v2-m3
+    api key : OUTLOOK_RERANK_API_KEY  >  ANTHROPIC_AUTH_TOKEN  >  ANTHROPIC_API_KEY  >  OPENAI_API_KEY
+    A more specific name wins wherever it is set. The chosen gateway is only used if the
+    endpoint probe (see --endpoint auto) succeeds, so a base URL that is not a reranker
+    gateway is reported as unusable instead of receiving mail data.
 
 Endpoint formats (vLLM serves both):
     --endpoint rerank  ->  POST {gateway}/v1/rerank   {"model","query","documents":[...]}
                            response {"results":[{"index","relevance_score"}]}
     --endpoint score   ->  POST {gateway}/v1/score    {"model","text_1":query,"text_2":[...]}
                            response {"data":[{"index","score"}]}
+    --endpoint auto    ->  (default) probe /v1/rerank then /v1/score with a one-document
+                           request; the first one that answers correctly is used.
 
 Privacy: subject, sender, date and body preview of every candidate are sent to the gateway.
 Use only a gateway the user trusts (typically an internal vLLM instance).
@@ -69,9 +72,9 @@ def resolve_config(args):
                 return v, f"settings.json:{n}"
         return None, None
 
-    url, url_src = pick(args.gateway, "OUTLOOK_RERANK_URL", "OPENAI_BASE_URL", "ANTHROPIC_BASE_URL")
+    url, url_src = pick(args.gateway, "OUTLOOK_RERANK_URL", "ANTHROPIC_BASE_URL", "OPENAI_BASE_URL")
     model, model_src = pick(args.model, "OUTLOOK_RERANK_MODEL")
-    key, key_src = pick(args.api_key, "OUTLOOK_RERANK_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_AUTH_TOKEN")
+    key, key_src = pick(args.api_key, "OUTLOOK_RERANK_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_API_KEY", "OPENAI_API_KEY")
     if not model:
         model, model_src = DEFAULT_MODEL, "default"
     if not url:
@@ -156,15 +159,43 @@ def call_gateway(url, model, key, query, docs, endpoint, timeout, retries):
     return scores
 
 
+def probe_endpoints(base, model, key, path_override, timeout):
+    """Try rerank then score with a tiny request. Returns (endpoint, url, report)."""
+    report = {}
+    for ep in ("rerank", "score"):
+        url = endpoint_url(base, ep, path_override)
+        try:
+            scores = call_gateway(url, model, key, "ping", ["ping"], ep, timeout, retries=0)
+            if scores and scores[0] is not None:
+                report[ep] = "ok"
+                return ep, url, report
+            report[ep] = "responded but no score in payload"
+        except SystemExit as e:
+            report[ep] = str(e)[:200]
+    raise SystemExit(
+        "No working reranker endpoint at " + base + ". "
+        + "; ".join(f"{k}: {v}" for k, v in report.items())
+        + ". Check OUTLOOK_RERANK_URL / OUTLOOK_RERANK_MODEL."
+    )
+
+
+def _select_endpoint(base, model, key, args):
+    if args.endpoint == "auto":
+        return probe_endpoints(base, model, key, args.path, min(args.timeout, 15.0))
+    url = endpoint_url(base, args.endpoint, args.path)
+    return args.endpoint, url, {args.endpoint: "forced"}
+
+
 # ---------------------------------------------------------------- main
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--query", required=True, help="natural-language query")
+    ap.add_argument("--query", help="natural-language query (required unless --show-config)")
     ap.add_argument("--input", help="JSON from Search-OutlookMail.ps1 (or a JSON array)")
     ap.add_argument("--gateway", help="OpenAI-compatible base URL, e.g. http://host:8000/v1")
     ap.add_argument("--model", help=f"reranker model name (default {DEFAULT_MODEL})")
     ap.add_argument("--api-key", help="bearer token if the gateway requires one")
-    ap.add_argument("--endpoint", choices=["rerank", "score"], default="rerank")
+    ap.add_argument("--endpoint", choices=["auto", "rerank", "score"], default="auto",
+                    help="auto (default) probes rerank then score and uses the first that answers")
     ap.add_argument("--path", help="override the endpoint path, e.g. rerank or v2/rerank")
     ap.add_argument("--batch", type=int, default=30, help="documents per request (default 30)")
     ap.add_argument("--doc-chars", type=int, default=600, help="max characters per document (default 600)")
@@ -179,18 +210,24 @@ def main(argv=None):
 
     if args.show_config:
         base, model, key, sources = resolve_config(args)
-        print(json.dumps({
-            "gateway": endpoint_url(base, args.endpoint, args.path),
+        info = {
+            "base_url": base,
             "model": model,
             "api_key": "set" if key else "none",
             "sources": sources,
             "batch": args.batch,
             "doc_chars": args.doc_chars,
-        }, ensure_ascii=False, indent=2))
-        return
+        }
+        try:
+            ep, url, report = _select_endpoint(base, model, key, args)
+            info.update({"endpoint": ep, "gateway": url, "probe": report, "usable": True})
+        except SystemExit as e:
+            info.update({"usable": False, "error": str(e)})
+        print(json.dumps(info, ensure_ascii=False, indent=2))
+        sys.exit(0 if info["usable"] else 1)
 
-    if not args.input:
-        raise SystemExit("--input is required (JSON from Search-OutlookMail.ps1).")
+    if not args.query or not args.input:
+        raise SystemExit("--query and --input are required (input = JSON from Search-OutlookMail.ps1).")
     cands = load_candidates(args.input)
     docs = [doc_text(m, args.doc_chars) for m in cands]
 
@@ -199,12 +236,12 @@ def main(argv=None):
         return
 
     base, model, key, _ = resolve_config(args)
-    url = endpoint_url(base, args.endpoint, args.path)
+    endpoint, url, _ = _select_endpoint(base, model, key, args)
 
     scores = []
     batch = max(1, args.batch)
     for i in range(0, len(docs), batch):
-        scores.extend(call_gateway(url, model, key, args.query, docs[i:i + batch], args.endpoint, args.timeout, args.retries))
+        scores.extend(call_gateway(url, model, key, args.query, docs[i:i + batch], endpoint, args.timeout, args.retries))
 
     ranked = []
     for m, s in zip(cands, scores):
@@ -222,6 +259,7 @@ def main(argv=None):
     out = {
         "Query": args.query,
         "Gateway": url,
+        "Endpoint": endpoint,
         "Model": model,
         "Candidates": len(cands),
         "Batches": (len(docs) + batch - 1) // batch,

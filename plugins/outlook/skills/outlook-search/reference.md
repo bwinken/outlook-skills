@@ -80,6 +80,7 @@ Rules:
 {
   "Query":      <query text>,
   "Gateway":    <endpoint URL used>,
+  "Endpoint":   "rerank" | "score",
   "Model":      <model name>,
   "Candidates": <int, mails sent>,
   "Batches":    <int, requests made>,

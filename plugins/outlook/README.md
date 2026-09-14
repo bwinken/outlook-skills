@@ -46,23 +46,31 @@ What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks
 
 ## Fuzzy search with a reranker (optional)
 
-`outlook-search` falls back to a cross-encoder reranker for fuzzy / semantic queries. `scripts/rerank.py` sends `(query, message preview)` pairs to an OpenAI-compatible gateway (vLLM `/v1/rerank`, or `/v1/score` with `--endpoint score`) in batches of 30 and sorts the candidates by relevance. Default model: `bge-reranker-v2-m3`.
+`outlook-search` narrows first (sender, dates, folder, keyword expansion). Only when the narrowed set is still larger than about 20 mails does it offer a cross-encoder reranker: `scripts/rerank.py` sends `(query, message preview)` pairs to an OpenAI-compatible gateway (vLLM `/v1/rerank`, or `/v1/score`) in batches of 30 and sorts the candidates by relevance. Default model: `bge-reranker-v2-m3`.
 
-Configure the gateway in `~/.claude/settings.json`:
+**Gateway resolution.** By default the script reuses the `ANTHROPIC_BASE_URL` that Claude Code already has in `~/.claude/settings.json` (`env` block), on the assumption that the same gateway also serves the reranker model. Override with `OUTLOOK_RERANK_URL` when the reranker lives elsewhere. Full order, a more specific name winning wherever it is set (flag, process env, or settings.json):
+
+| Setting | Names, first wins |
+|---|---|
+| gateway | `--gateway`, `OUTLOOK_RERANK_URL`, `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL` |
+| model | `--model`, `OUTLOOK_RERANK_MODEL`, default `bge-reranker-v2-m3` |
+| api key | `--api-key`, `OUTLOOK_RERANK_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` |
+
+Example `~/.claude/settings.json`:
 
 ```json
 {
   "env": {
-    "OUTLOOK_RERANK_URL": "http://your-vllm-host:8000/v1",
-    "OUTLOOK_RERANK_MODEL": "bge-reranker-v2-m3",
-    "OUTLOOK_RERANK_API_KEY": "optional-bearer-token"
+    "ANTHROPIC_BASE_URL": "http://your-gateway:8000",
+    "ANTHROPIC_AUTH_TOKEN": "token",
+    "OUTLOOK_RERANK_MODEL": "bge-reranker-v2-m3"
   }
 }
 ```
 
-The same names work as process environment variables or as `--gateway` / `--model` / `--api-key` flags. A specific name always wins over a generic fallback (`OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL`, `OPENAI_API_KEY`, `ANTHROPIC_AUTH_TOKEN`) no matter where each is set. `python rerank.py --show-config` prints what would be used without sending anything; `--dry-run` prints the documents that would be sent.
+**Endpoint probe.** With `--endpoint auto` (default) the script sends a one-word test request to `{base}/v1/rerank`, then `{base}/v1/score`, and uses the first that returns a score. A base URL that is not a reranker gateway (for example the public Anthropic API) fails the probe and is reported as unusable; no mail data is sent. `python rerank.py --show-config` runs the resolution and probe and prints the result (exit 0 usable, 1 not); `--dry-run` prints the documents that would be sent.
 
-**Privacy**: subject, sender, date and a preview (default 600 characters of combined text) of every candidate leave the machine. The skill therefore asks the user for confirmation, naming the gateway and the number of mails, before every reranker call. Point it at an internal vLLM instance, not a public API.
+**Privacy.** Subject, sender, date and a preview (default 600 characters of combined text) of every candidate leave the machine. The skill therefore asks the user for confirmation, naming the gateway and the number of mails, before every reranker call. Point it at an internal vLLM instance, not a public API.
 
 ## Output format
 

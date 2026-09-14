@@ -53,17 +53,19 @@ Text matching is case-insensitive substring. Quote values containing spaces.
 
 ## Fuzzy / semantic search (reranker)
 
-Substring matching misses typos, synonyms and mixed Chinese/English wording. Escalate in this order and stop as soon as the user has what they need:
+Substring matching misses typos, synonyms and mixed Chinese/English wording. Escalate in this order and stop as soon as the user has what they need. **Always narrow first; the reranker is only for when the narrowed set is still too big to read.**
 
-1. **Exact**: the filters above.
-2. **Keyword expansion** (no network, no consent needed): rewrite the request into several likely terms in both languages and run `-AnyOf`. Example: "上次跟供應商談價格的信" -> `-AnyOf "價格","報價","quote","quotation","pricing" -After <90 days ago> -AllFolders`.
-3. **Reranker** (sends data to a gateway, **consent required**):
-   - Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config` to resolve the gateway URL and model.
-   - **Ask the user before sending anything.** Tell them, in one short message: which gateway URL and model will be used, that the subject, sender, date and a ~500-character preview of about N candidate mails from the chosen date range will be sent in batches of 30, and ask whether to go ahead. Use AskUserQuestion when available. Proceed only on a clear yes. If they decline, stay with steps 1 and 2.
-   - Fetch candidates broadly: `Search-OutlookMail.ps1 -After <date> -AllFolders -Max 300 -PreviewLength 500 -OutFile "<tmp>/candidates.json"` (add `-AnyOf` terms to narrow if the mailbox is large; 100 to 300 candidates is the useful range).
+1. **Narrow with what is certain.** Turn every hard fact in the request into filters before any fuzzy step: sender or recipient, date range (default the last 90 days when the user says "recently" or gives no hint), folder, attachments. Run that search with `-Max 300 -PreviewLength 500 -OutFile "<tmp>/candidates.json"`.
+2. **Keyword expansion** when the topic is fuzzy (no network, no consent needed): rewrite the topic into several likely terms in both languages and add `-AnyOf`. Example: "上次跟供應商談價格的信" -> `-AnyOf "價格","報價","quote","quotation","pricing"`.
+3. **Decide by count** (`Count` in the JSON):
+   - **0**: relax one filter (wider dates, `-AllFolders`, fewer terms) and retry once. Then report what was tried.
+   - **1 to 20**: do not rerank. Read them directly: show the list, or re-run with `-IncludeBody` on the same filters and answer the question from the bodies.
+   - **more than 20**: use the reranker (next step). If it is unavailable or declined, show the newest 20 and ask the user for another constraint.
+4. **Reranker** (sends data to a gateway, **consent required**):
+   - Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config`. It resolves the gateway (by default the `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, overridable with `OUTLOOK_RERANK_URL`), then probes `/v1/rerank` and `/v1/score` with a one-word test request and reports `usable`, `endpoint` and `gateway`. Exit code 1 means no usable reranker: say so, mention the settings names (see plugin README), and fall back to step 3's "declined" path. Do not guess a URL.
+   - **Ask the user before sending anything.** One short message: the gateway URL and model from `--show-config`, that subject, sender, date and a ~500-character preview of the `Count` candidates will be sent in batches of 30, and whether to go ahead. Use AskUserQuestion when available. Proceed only on a clear yes.
    - Rank: `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --query "<the user's request in their own words>" --input "<tmp>/candidates.json" --top 10`.
-   - Present the top results with their `Score` (see reference.md). Scores are relative; treat anything far below the best hit as noise.
-   - If `--show-config` reports no gateway, say the reranker is not configured and explain the `OUTLOOK_RERANK_URL` / `OUTLOOK_RERANK_MODEL` / `OUTLOOK_RERANK_API_KEY` settings (see plugin README). Do not guess a URL.
+   - Present the top results with their `Score` (see reference.md). Scores are relative; treat anything far below the best hit as noise. Offer to open the best hits with `-IncludeBody` or `outlook-thread`.
 
 Never send full bodies to the gateway (the script only sends previews), and never send candidates the user has not agreed to send.
 
