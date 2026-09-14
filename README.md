@@ -21,13 +21,14 @@ Inside Claude Code:
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
-| `outlook-settings` | 記住 Alice 是誰、設定工作時間、目前用什麼設定 |
+| `outlook-settings` | 設定工作時間、目前用什麼設定、reranker gateway |
+| `outlook-memory` | 第一次使用時建立個人化記憶、記住 Alice 是誰、忘掉、你記得什麼 |
 
 All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements, the full read-only policy, and how the skills cope with a locked-down PowerShell execution policy.
 
 ## 設定與記憶
 
-設定與 Claude 記下的別名、偏好放在 `~/.outlook-skills/`（使用者層級）與 `./.outlook-skills/`（工作目錄層級，優先）。兩者都不是 Outlook 的資料，plugin 只寫這兩個資料夾。詳見 plugin README。
+設定放在 `~/.outlook-skills/settings.json`（使用者層級）與 `./.outlook-skills/settings.json`（工作目錄層級，優先）。記憶放在 `memory/<分類>/<標題>.md`，每檔有 YAML frontmatter 記標題、tags、建立與修改時間。第一次使用會問你要不要唯讀掃描信箱建立個人化記憶，草稿給你看過才寫入。兩者都不是 Outlook 的資料，plugin 只寫這兩個資料夾。詳見 plugin README。
 
 ## Layout
 

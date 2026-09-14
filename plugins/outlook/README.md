@@ -10,12 +10,13 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook |
-| `outlook-settings` | The plugin's own settings and memory: working hours, defaults, reranker, remembered aliases and preferences |
+| `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
+| `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
 
 ## Requirements
 
 - Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook-status -SkipCom` still works there.
-- Windows PowerShell 5.1 (built in) or PowerShell 7 for the five COM-based skills.
+- Windows PowerShell 5.1 (built in) or PowerShell 7 for the COM-based skills (status, search, thread, agenda, availability, memory onboarding).
 - Python 3.8+ for `outlook-open-msg`; `pip install extract-msg` for .msg files.
 - Outlook may be open or closed. If closed, the COM call starts it in the background under the current user's profile.
 
@@ -44,7 +45,7 @@ Many Windows machines refuse to run `.ps1` files ("running scripts is disabled o
 
 Neither layer changes any machine or user setting. The plugin never runs `Set-ExecutionPolicy`.
 
-What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the five COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
+What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
 
 ## Fuzzy search with a reranker (optional)
 
@@ -83,7 +84,9 @@ The skills keep their own configuration outside Outlook, in two optional folders
 | `~/.outlook-skills/` | the user, every project |
 | `./.outlook-skills/` (working directory or any parent up to home) | this project; overrides the user level key by key |
 
-Each holds `settings.json` (only the keys you changed), `settings.example.json` (all keys with defaults) and `memory.md`. `scripts/settings.py show` merges them and reports which file set each key; every skill runs it once per conversation and applies the result (working hours, default search window, default store, reranker gateway, reply language). `memory.md` (or a `memory/` folder of topic files once it grows; `show` suggests splitting past about 300 entries) is free-form Markdown where Claude keeps, only with the user's say-so, contact aliases, folder meanings, project keywords and preferences, never mail content. Use the `outlook-settings` skill to view or change either file. Add `.outlook-skills/` to `.gitignore` in a repo; memory.md contains names and addresses.
+**Settings**: `settings.json` holds only the keys you changed (`settings.example.json` lists them all). `scripts/settings.py show` merges the layers, reports which file set each key, and every skill runs it once per conversation (working hours, default search window, default store, reranker gateway, reply language). Change with the `outlook-settings` skill or `settings.py set key value`.
+
+**Memory**: `memory/<category>/<title>.md`, one Markdown file per person, folder, project, routine or preference, with YAML front matter (`title`, `category`, `tags`, `created`, `updated`, `source`). Categories: `people`, `folders`, `projects`, `preferences`, `recurring`. `scripts/memory.py` creates, finds, appends to and removes notes and keeps the timestamps; skills only read the index and open the notes a request needs. The first time any skill runs and `~/.outlook-skills` is missing, `outlook-memory` asks whether to build a personal memory: with a yes it runs `Get-OutlookOverview.ps1` (read-only, counts only, no bodies) over the last 180 days, drafts notes about frequent contacts, folders, topics and recurring meetings, shows the draft, and writes only what the user approves. Later, "記住 …" appends to an existing note when one matches or creates a new one. Nothing is written without the user's say-so, and mail bodies never go into memory. Add `.outlook-skills/` to `.gitignore` in a repo; the notes contain names and addresses.
 
 ## Output format
 
@@ -102,7 +105,9 @@ plugins/outlook/
     Get-OutlookCalendar.ps1
     read_msg.py
     rerank.py                 optional reranker client for fuzzy search (asks consent first)
-    settings.py               merges ~/.outlook-skills and ./.outlook-skills settings; init / set / memory
+    settings.py               merges ~/.outlook-skills and ./.outlook-skills settings; init / set / show
+    memory.py                 memory notes: list / find / new / append / touch / remove
+    Get-OutlookOverview.ps1   read-only mailbox overview (top senders, folders, topics, recurring meetings) for onboarding
   skills/
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md
@@ -111,6 +116,7 @@ plugins/outlook/
     outlook-availability/ SKILL.md + reference.md   (same script as agenda)
     outlook-open-msg/  SKILL.md + reference.md
     outlook-settings/  SKILL.md + reference.md
+    outlook-memory/    SKILL.md + reference.md
 ```
 
 Skills reference scripts via `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin directory.

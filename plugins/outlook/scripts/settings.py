@@ -5,18 +5,17 @@ Two layers, the closer one wins key by key (deep merge):
     ~/.outlook-skills/settings.json          user level, shared across projects
     <cwd or a parent>/.outlook-skills/settings.json   working-directory level
 
-Each folder may also hold memory.md, free-form notes Claude keeps for the user
-(contact aliases, folder meanings, project keywords, preferences), and/or a memory/
-directory of topic files (people.md, folders.md, projects.md, preferences.md ...).
-All are read, user level first; the working-directory folder is preferred for new notes.
+Each folder may also hold memory/<category>/<title>.md notes Claude keeps for the user
+(see memory.py). Both layers are indexed; the working-directory folder is preferred for
+new notes when it exists.
 
 Usage:
     python settings.py show                # merged settings + which file set each key + memory paths
-    python settings.py init                # create ~/.outlook-skills/ with an empty settings.json, settings.example.json (all keys), memory.md
+    python settings.py init                # create ~/.outlook-skills/ with settings.json ({}), settings.example.json, memory/<category>/
     python settings.py init --local        # same, in ./.outlook-skills/
     python settings.py set working_hours.end 17:30 [--local]
     python settings.py set rerank.auto_consent true
-    python settings.py memory              # print the memory files' contents
+    python settings.py memory              # memory index (use memory.py for details)
     python settings.py path                # print the resolved folders
 
 Nothing here touches Outlook. The only writes are to the plugin's own folders.
@@ -28,7 +27,8 @@ import sys
 from pathlib import Path
 
 DIRNAME = ".outlook-skills"
-MEMORY_SOFT_LIMIT = 300   # entries across all memory files before `show` suggests pruning or splitting
+MEMORY_SOFT_LIMIT = 300   # memory files before `show` suggests pruning
+CATEGORIES = ["people", "folders", "projects", "preferences", "recurring"]
 
 DEFAULTS = {
     "language": "zh-TW",
@@ -53,20 +53,23 @@ DEFAULTS = {
 
 MEMORY_TEMPLATE = """# Outlook memory
 
-Notes Claude keeps for the Outlook skills. Only aliases, meanings, keywords,
-decisions and preferences go here; never mail bodies or attachments.
+One Markdown file per topic, in a category folder, with YAML front matter:
 
-## 人物與別名
-<!-- - Alice = Alice Chen <alice.chen@contoso.com>，法務窗口 -->
+    memory/people/alice-chen.md
+    ---
+    title: Alice Chen
+    category: people
+    tags: [legal, contoso]
+    created: 2026-09-14T10:02:11
+    updated: 2026-09-14T10:02:11
+    source: user
+    ---
+    - 法務窗口，alice.chen@contoso.com
 
-## 資料夾
-<!-- - Inbox/Vendors：供應商往來 -->
-
-## 專案關鍵字
-<!-- - Q3 預算：方案 B，1.5M，VP review 9/19 -->
-
-## 偏好
-<!-- - 表格日期用 MM/dd；回覆用繁體中文 -->
+Categories: people (人物), folders (資料夾), projects (專案與主題), preferences (偏好),
+recurring (定期事務：週報、月結、固定會議). Manage with scripts/memory.py or the
+outlook-memory skill. Only aliases, meanings, keywords, decisions and preferences
+belong here; never mail bodies, attachments or credentials.
 """
 
 
@@ -122,45 +125,25 @@ def resolve():
         lp = ld / "settings.json"
         merged = _merge(merged, _load(lp), str(lp), sources)
         layers.append(str(lp))
-    memory = []
-    for d in [user_dir(), ld]:
-        if not d:
-            continue
-        if (d / "memory.md").is_file():
-            memory.append(str(d / "memory.md"))
-        if (d / "memory").is_dir():
-            memory.extend(str(p) for p in sorted((d / "memory").glob("*.md")))
-    return merged, sources, layers, memory, ld
-
-
-def memory_stats(paths):
-    """Line and byte counts per memory file, plus a hint when they grow large."""
-    out = []
-    total_lines = 0
-    for m in paths:
-        try:
-            text = Path(m).read_text(encoding="utf-8")
-        except Exception:
-            continue
-        lines = sum(1 for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#") and not ln.lstrip().startswith("<!--"))
-        total_lines += lines
-        out.append({"file": m, "entries": lines, "bytes": len(text.encode("utf-8"))})
-    hint = None
-    if total_lines > MEMORY_SOFT_LIMIT:
-        hint = (f"memory holds about {total_lines} entries (soft limit {MEMORY_SOFT_LIMIT}); suggest pruning stale bullets "
-                f"or splitting memory.md into memory/people.md, memory/folders.md, memory/projects.md, memory/preferences.md")
-    return out, hint
+    return merged, sources, layers, ld
 
 
 def cmd_show(args):
-    merged, sources, layers, memory, ld = resolve()
-    stats, hint = memory_stats(memory)
+    merged, sources, layers, ld = resolve()
+    try:
+        import memory as pm
+        idx = pm.index_summary()
+    except Exception as e:
+        idx = {"count": 0, "per_category": {}, "entries": [], "error": str(e)}
+    hint = None
+    if idx["count"] > MEMORY_SOFT_LIMIT:
+        hint = f"{idx['count']} memory files (soft limit {MEMORY_SOFT_LIMIT}); suggest pruning stale ones"
     print(json.dumps({
+        "first_run": not user_dir().exists(),   # true = ~/.outlook-skills has never been created: offer onboarding
         "settings": merged,
         "sources": sources,           # key -> file that set it (keys absent here are defaults)
         "layers": layers,             # files actually read, in precedence order (later wins)
-        "memory": memory,             # memory.md and memory/*.md files that exist, user level first
-        "memory_stats": stats,
+        "memory": idx,                # index only: title, category, tags, updated, path. Read files on demand with memory.py show
         "memory_hint": hint,
         "local_dir": str(ld) if ld else None,
         "user_dir": str(user_dir()),
@@ -180,11 +163,16 @@ def cmd_init(args):
     if not ex.exists():
         ex.write_text(json.dumps(DEFAULTS, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         created.append(str(ex))
-    mp = target / "memory.md"
-    if not mp.exists():
-        mp.write_text(MEMORY_TEMPLATE, encoding="utf-8")
-        created.append(str(mp))
-    print(json.dumps({"dir": str(target), "created": created, "already_present": [str(p) for p in (sp, ex, mp) if str(p) not in created]}, ensure_ascii=False, indent=2))
+    for c in CATEGORIES:
+        d = target / "memory" / c
+        if not d.exists():
+            d.mkdir(parents=True)
+            created.append(str(d) + os.sep)
+    rd = target / "memory" / "README.md"
+    if not rd.exists():
+        rd.write_text(MEMORY_TEMPLATE, encoding="utf-8")
+        created.append(str(rd))
+    print(json.dumps({"dir": str(target), "created": created, "already_present": [str(p) for p in (sp, ex) if str(p) not in created]}, ensure_ascii=False, indent=2))
 
 
 def _coerce(v: str):
@@ -226,13 +214,8 @@ def cmd_set(args):
 
 
 def cmd_memory(args):
-    _, _, _, memory, _ = resolve()
-    if not memory:
-        print("(no memory.md found; run `settings.py init` to create one)")
-        return
-    for m in memory:
-        print(f"===== {m}")
-        print(Path(m).read_text(encoding="utf-8"))
+    import memory as pm
+    print(json.dumps(pm.index_summary(), ensure_ascii=False, indent=2))
 
 
 def cmd_path(args):

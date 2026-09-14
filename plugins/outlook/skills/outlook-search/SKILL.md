@@ -79,7 +79,12 @@ Never send full bodies to the gateway (the script only sends previews), and neve
 
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). Apply the merged `settings` (`search.*` for default folder, lookback window, candidate cap and the direct-read threshold; `store`; `rerank.*` including `auto_consent`, which replaces the per-run consent question when true; `language`) and read every `memory` file it lists: memory.md holds the user's contact aliases, folder meanings, project keywords and preferences, so "Alice" or "供應商的信" may already be defined there. If the user tells you something worth keeping, offer to save it with `outlook-settings`; do not write memory silently. Details: `${CLAUDE_PLUGIN_ROOT}/skills/outlook-settings/reference.md`.
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+
+- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-memory`'s onboarding, which asks the user (AskUserQuestion) whether to create a personal memory and scan the mailbox. Respect a "not now" and continue here.
+- Apply the merged `settings` (`search.*` for default folder, lookback window, candidate cap and the direct-read threshold; `store`; `rerank.*` including `auto_consent`, which replaces the per-run consent question when true; `language`).
+- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
 
 ## Output format
 

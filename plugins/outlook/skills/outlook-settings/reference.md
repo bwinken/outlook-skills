@@ -18,30 +18,9 @@
 | `rerank.auto_consent` | `false` | search | skip the per-run confirmation before sending candidates to the reranker |
 | `status.skip_com` | `false` | status | always run `outlook-status` with `-SkipCom` (New Outlook machines) |
 
-`settings.py show` returns `settings` (merged), `sources` (key → file for every non-default key), `layers` (files read), `memory` (memory.md and memory/*.md files found), `memory_stats` (entries and bytes per file), `memory_hint` (null, or a suggestion to prune or split), `local_dir`, `user_dir`.
+`settings.py show` returns `first_run` (true when `~/.outlook-skills` does not exist yet), `settings` (merged), `sources` (key → file for every non-default key), `layers` (files read), `memory` (index: count, per_category, entries with title/category/tags/updated/path), `memory_hint`, `local_dir`, `user_dir`.
 
-## 2. memory.md structure
-
-```
-# Outlook memory
-## 人物與別名
-- Alice = Alice Chen <alice.chen@contoso.com>，法務窗口
-## 資料夾
-- Inbox/Vendors：供應商往來
-## 專案關鍵字
-- Q3 預算：方案 B，1.5M，VP review 9/19
-## 偏好
-- 表格日期用 MM/dd；回覆用繁體中文
-```
-
-Splitting when it grows: a folder may hold `memory/*.md` topic files instead of, or in addition to, `memory.md` (`people.md`, `folders.md`, `projects.md`, `preferences.md`). `settings.py show` lists all of them with entry counts and sets `memory_hint` once the total passes 300 entries; when you see the hint, propose pruning stale bullets or splitting, and do it only on the user's yes. Move bullets verbatim; never rewrite them while moving.
-
-Rules:
-- One bullet per fact, under the heading it belongs to; add a heading only if none fits.
-- Keep bullets short (one line). Put the date in parentheses when the fact can go stale, e.g. `（2026/09）`.
-- When a new fact contradicts an old bullet, replace the old one and say so.
-
-## 3. Presenting `show`
+## 2. Presenting `show`
 
 ```
 ## Outlook skills 設定
@@ -55,7 +34,7 @@ Rules:
 | 預設信箱 | （主信箱） | 預設 |
 | Reranker | gateway http://vllm.internal:8000，模型 bge-reranker-v2-m3，每次詢問 | ./.outlook-skills |
 
-記憶檔：~/.outlook-skills/memory.md（4 條）、./.outlook-skills/memory.md（2 條）
+記憶：~/.outlook-skills/memory/ 共 29 條（people 12、folders 6、projects 8、recurring 3）；用 outlook-memory 查看或修改
 ```
 
 Show the api key as `已設定` / `未設定`, never its value. List only the rows in the table above; skip internal keys.
