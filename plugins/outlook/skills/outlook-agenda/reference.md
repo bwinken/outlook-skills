@@ -1,4 +1,4 @@
-# outlook-calendar reference
+# outlook-agenda reference
 
 ## 1. Script output (JSON)
 
@@ -31,11 +31,9 @@ Appointment:
 
 Items with `BusyStatus = Free` are excluded unless `-IncludeFree` was passed.
 
-## 2. Presentation templates
+## 2. Presentation template
 
 Match the user's language; labels below are Traditional Chinese.
-
-### 2a. Agenda
 
 ```
 ## {range label: 今天 9/14（一） | 本週 9/14 – 9/20 | 9/15 – 9/19}
@@ -43,9 +41,9 @@ Match the user's language; labels below are Traditional Chinese.
 **9/14（一）**
 | 時間 | 會議 | 地點 | 主辦 | 狀態 |
 |---|---|---|---|---|
+| 全天 | 出差台中 | | | |
 | 09:30–10:00 | 每日站會 🔁 | Teams | Alice | ✅ |
 | 14:00–15:30 | Q3 預算審查 | 3F 會議室 | 王小明 | ❓ 未回覆 |
-| 全天 | 出差台中 | | | |
 
 **9/15（二）**
 （沒有行程）
@@ -65,20 +63,4 @@ Rules:
 - Skip empty days inside a one-day range; list them as `（沒有行程）` inside a multi-day range so the user sees gaps.
 - Location: shorten Teams / Zoom / Meet URLs to the platform name.
 - More than 40 items: group per day with counts and list only meetings that need action, then offer the full list.
-
-### 2b. Free slots ("when am I free")
-
-```
-## 空檔 {range label}（工作時間 09:00–18:00，已排除 Free 狀態的項目）
-
-| 日期 | 空檔 | 長度 |
-|---|---|---|
-| 9/15（二） | 10:00–12:00 | 2 小時 |
-| 9/15（二） | 15:30–18:00 | 2.5 小時 |
-```
-
-Rules:
-- Working hours default 09:00–18:00 local; use the user's hours if they state them.
-- Merge adjacent gaps; ignore gaps under 30 minutes unless asked.
-- Treat `Tentative` as busy but mention it: `（含 1 場暫定會議）`.
-- Never offer to book the slot; the plugin is read-only.
+- The plugin is read-only: never offer to accept, decline or reschedule.

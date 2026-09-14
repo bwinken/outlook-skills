@@ -11,13 +11,22 @@
     {
       "name": "outlook",
       "source": "./plugins/outlook",
-      "description": "Read-only Outlook skills: outlook-status, outlook-search, outlook-thread, outlook-calendar, outlook-open-msg. Never modifies mailbox data.",
+      "description": "Read-only Outlook skills: outlook-status, outlook-search, outlook-thread, outlook-agenda, outlook-availability, outlook-open-msg. Never modifies mailbox data.",
       "version": "0.1.0",
       "author": {
         "name": "bwinken"
       },
       "category": "productivity",
-      "keywords": ["outlook", "email", "calendar", "msg", "eml", "pst", "windows", "read-only"]
+      "keywords": [
+        "outlook",
+        "email",
+        "calendar",
+        "msg",
+        "eml",
+        "pst",
+        "windows",
+        "read-only"
+      ]
     }
   ]
 }

@@ -18,7 +18,8 @@ Inside Claude Code:
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
 | `outlook-search` | 找 Alice 上週寄給我的信、有附件的未讀郵件、模糊搜尋「上次跟供應商談價格的信」（可選 reranker） |
 | `outlook-thread` | 幫我摘要「Q3 預算」這串討論、結論和待辦是什麼 |
-| `outlook-calendar` | 今天有什麼會議、這週哪裡有空、有沒有撞期 |
+| `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
+| `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
 
 All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements, the full read-only policy, and how the skills cope with a locked-down PowerShell execution policy.

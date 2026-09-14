@@ -7,13 +7,14 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-status` | Outlook version, profiles, accounts, .pst/.ost files, folder counts |
 | `outlook-search` | Search mail by sender, subject, body, date, attachments, unread |
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
-| `outlook-calendar` | Agenda for a date range with recurrences expanded and conflicts flagged |
+| `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
+| `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook |
 
 ## Requirements
 
 - Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook-status -SkipCom` still works there.
-- Windows PowerShell 5.1 (built in) or PowerShell 7 for the four COM-based skills.
+- Windows PowerShell 5.1 (built in) or PowerShell 7 for the five COM-based skills.
 - Python 3.8+ for `outlook-open-msg`; `pip install extract-msg` for .msg files.
 - Outlook may be open or closed. If closed, the COM call starts it in the background under the current user's profile.
 
@@ -42,7 +43,7 @@ Many Windows machines refuse to run `.ps1` files ("running scripts is disabled o
 
 Neither layer changes any machine or user setting. The plugin never runs `Set-ExecutionPolicy`.
 
-What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the four COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
+What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the five COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
 
 ## Fuzzy search with a reranker (optional)
 
@@ -93,7 +94,8 @@ plugins/outlook/
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md
     outlook-thread/    SKILL.md + reference.md
-    outlook-calendar/  SKILL.md + reference.md
+    outlook-agenda/    SKILL.md + reference.md
+    outlook-availability/ SKILL.md + reference.md   (same script as agenda)
     outlook-open-msg/  SKILL.md + reference.md
 ```
 
