@@ -6,8 +6,9 @@ Two layers, the closer one wins key by key (deep merge):
     <cwd or a parent>/.outlook-skills/settings.json   working-directory level
 
 Each folder may also hold memory.md, free-form notes Claude keeps for the user
-(contact aliases, folder meanings, project keywords, preferences). Both memory
-files are read; the working-directory one is preferred for new notes when it exists.
+(contact aliases, folder meanings, project keywords, preferences), and/or a memory/
+directory of topic files (people.md, folders.md, projects.md, preferences.md ...).
+All are read, user level first; the working-directory folder is preferred for new notes.
 
 Usage:
     python settings.py show                # merged settings + which file set each key + memory paths
@@ -27,6 +28,7 @@ import sys
 from pathlib import Path
 
 DIRNAME = ".outlook-skills"
+MEMORY_SOFT_LIMIT = 300   # entries across all memory files before `show` suggests pruning or splitting
 
 DEFAULTS = {
     "language": "zh-TW",
@@ -120,17 +122,46 @@ def resolve():
         lp = ld / "settings.json"
         merged = _merge(merged, _load(lp), str(lp), sources)
         layers.append(str(lp))
-    memory = [str(p) for p in [user_dir() / "memory.md", (ld / "memory.md") if ld else None] if p and p.is_file()]
+    memory = []
+    for d in [user_dir(), ld]:
+        if not d:
+            continue
+        if (d / "memory.md").is_file():
+            memory.append(str(d / "memory.md"))
+        if (d / "memory").is_dir():
+            memory.extend(str(p) for p in sorted((d / "memory").glob("*.md")))
     return merged, sources, layers, memory, ld
+
+
+def memory_stats(paths):
+    """Line and byte counts per memory file, plus a hint when they grow large."""
+    out = []
+    total_lines = 0
+    for m in paths:
+        try:
+            text = Path(m).read_text(encoding="utf-8")
+        except Exception:
+            continue
+        lines = sum(1 for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#") and not ln.lstrip().startswith("<!--"))
+        total_lines += lines
+        out.append({"file": m, "entries": lines, "bytes": len(text.encode("utf-8"))})
+    hint = None
+    if total_lines > MEMORY_SOFT_LIMIT:
+        hint = (f"memory holds about {total_lines} entries (soft limit {MEMORY_SOFT_LIMIT}); suggest pruning stale bullets "
+                f"or splitting memory.md into memory/people.md, memory/folders.md, memory/projects.md, memory/preferences.md")
+    return out, hint
 
 
 def cmd_show(args):
     merged, sources, layers, memory, ld = resolve()
+    stats, hint = memory_stats(memory)
     print(json.dumps({
         "settings": merged,
         "sources": sources,           # key -> file that set it (keys absent here are defaults)
         "layers": layers,             # files actually read, in precedence order (later wins)
-        "memory": memory,             # memory.md files that exist
+        "memory": memory,             # memory.md and memory/*.md files that exist, user level first
+        "memory_stats": stats,
+        "memory_hint": hint,
         "local_dir": str(ld) if ld else None,
         "user_dir": str(user_dir()),
     }, ensure_ascii=False, indent=2))

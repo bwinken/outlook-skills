@@ -14,7 +14,7 @@ Manages the plugin's own configuration. It never touches Outlook; the only files
 | `~/.outlook-skills/` | the user, every project | lower |
 | `./.outlook-skills/` (cwd or any parent up to home) | this working directory | higher, key by key |
 
-Each folder holds `settings.json` (only the keys the user changed), `settings.example.json` (every key with its default, reference only) and `memory.md`.
+Each folder holds `settings.json` (only the keys the user changed), `settings.example.json` (every key with its default, reference only) and `memory.md`, optionally split into `memory/*.md` topic files when it grows (see reference.md).
 
 ## Commands
 
@@ -34,6 +34,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" memory          # print memor
 - **First use / no folder yet**: run `init` (user level) and tell the user where the files are. Suggest adding `.outlook-skills/` to `.gitignore` when the working directory is a git repo, because memory.md will contain names and addresses.
 - **Remember something** ("記住 Alice 是 alice.chen@contoso.com", "供應商的信都在 Inbox/Vendors"): append one bullet under the matching heading of memory.md (prefer the local file when it exists, else the user file; create with `init` if neither exists). Show the exact line you added.
 - **Forget something**: remove the bullet, show what was removed.
+- **Memory getting long**: when `show` returns a `memory_hint`, tell the user once per conversation and offer to prune stale bullets or split into `memory/` topic files. Do nothing without a yes.
 - **Reranker consent**: `rerank.auto_consent true` lets outlook-search skip the per-run confirmation. Only set it when the user explicitly asks, and repeat once what will be sent and where.
 
 ## What may go into memory.md

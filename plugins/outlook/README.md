@@ -83,7 +83,7 @@ The skills keep their own configuration outside Outlook, in two optional folders
 | `~/.outlook-skills/` | the user, every project |
 | `./.outlook-skills/` (working directory or any parent up to home) | this project; overrides the user level key by key |
 
-Each holds `settings.json` (only the keys you changed), `settings.example.json` (all keys with defaults) and `memory.md`. `scripts/settings.py show` merges them and reports which file set each key; every skill runs it once per conversation and applies the result (working hours, default search window, default store, reranker gateway, reply language). `memory.md` is free-form Markdown where Claude keeps, only with the user's say-so, contact aliases, folder meanings, project keywords and preferences, never mail content. Use the `outlook-settings` skill to view or change either file. Add `.outlook-skills/` to `.gitignore` in a repo; memory.md contains names and addresses.
+Each holds `settings.json` (only the keys you changed), `settings.example.json` (all keys with defaults) and `memory.md`. `scripts/settings.py show` merges them and reports which file set each key; every skill runs it once per conversation and applies the result (working hours, default search window, default store, reranker gateway, reply language). `memory.md` (or a `memory/` folder of topic files once it grows; `show` suggests splitting past about 300 entries) is free-form Markdown where Claude keeps, only with the user's say-so, contact aliases, folder meanings, project keywords and preferences, never mail content. Use the `outlook-settings` skill to view or change either file. Add `.outlook-skills/` to `.gitignore` in a repo; memory.md contains names and addresses.
 
 ## Output format
 

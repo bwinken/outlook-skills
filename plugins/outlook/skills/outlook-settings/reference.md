@@ -18,7 +18,7 @@
 | `rerank.auto_consent` | `false` | search | skip the per-run confirmation before sending candidates to the reranker |
 | `status.skip_com` | `false` | status | always run `outlook-status` with `-SkipCom` (New Outlook machines) |
 
-`settings.py show` returns `settings` (merged), `sources` (key → file for every non-default key), `layers` (files read), `memory` (memory.md files found), `local_dir`, `user_dir`.
+`settings.py show` returns `settings` (merged), `sources` (key → file for every non-default key), `layers` (files read), `memory` (memory.md and memory/*.md files found), `memory_stats` (entries and bytes per file), `memory_hint` (null, or a suggestion to prune or split), `local_dir`, `user_dir`.
 
 ## 2. memory.md structure
 
@@ -33,6 +33,8 @@
 ## 偏好
 - 表格日期用 MM/dd；回覆用繁體中文
 ```
+
+Splitting when it grows: a folder may hold `memory/*.md` topic files instead of, or in addition to, `memory.md` (`people.md`, `folders.md`, `projects.md`, `preferences.md`). `settings.py show` lists all of them with entry counts and sets `memory_hint` once the total passes 300 entries; when you see the hint, propose pruning stale bullets or splitting, and do it only on the user's yes. Move bullets verbatim; never rewrite them while moving.
 
 Rules:
 - One bullet per fact, under the heading it belongs to; add a heading only if none fits.
