@@ -37,6 +37,15 @@ Options:
 4. For meeting prep, take attendee names from an item and hand them to `outlook-search -From ...` to gather recent mails.
 5. If the user asks when they are free, switch to `outlook-availability`.
 
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+
+- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-memory`'s onboarding, which asks the user (AskUserQuestion) whether to create a personal memory and scan the mailbox. Respect a "not now" and continue here.
+- Apply the merged `settings` (`store`, `language`).
+- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
+
 ## Output format
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-agenda/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.

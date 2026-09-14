@@ -25,8 +25,17 @@ Requirements: `.eml` needs only Python 3. `.msg` needs `pip install extract-msg`
 
 1. Run with `--format markdown` for a quick read, or json when you need to post-process.
 2. Present: from, to/cc, date, subject, attachment names and sizes, then the body (trim long quoted history).
-3. For a phishing or delivery question, re-run with `--headers` and check: sender address vs display name, Reply-To differing from From, `Authentication-Results` (SPF / DKIM / DMARC), the chain of `Received` hops, and attachment types. Report findings; do not open attachments.
+3. **Always** run the quick phishing check (plugin README, "Phishing warnings") before presenting: display name vs address, Reply-To, risky attachment types, look-alike domains, credential or payment asks. If it trips, the 🚨 / ⚠️ warning goes first and every link is defanged. For a phishing or delivery question, re-run with `--headers` and add the full table from reference.md §2b (SPF / DKIM / DMARC from `Authentication-Results`, the `Received` chain). Never open attachments; refuse `--extract-to` on a 🚨 mail.
 4. Multiple files: pass them all at once; JSON output becomes an array.
+
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+
+- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-memory`'s onboarding, which asks the user (AskUserQuestion) whether to create a personal memory and scan the mailbox. Respect a "not now" and continue here.
+- Apply the merged `settings` (`language`).
+- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
 
 ## Output format
 

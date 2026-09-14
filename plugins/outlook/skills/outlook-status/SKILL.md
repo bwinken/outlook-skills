@@ -40,6 +40,15 @@ Options:
 - Point out orphaned data files (on disk but not in `Stores`) and stores close to typical size limits (50 GB for modern .pst/.ost).
 - If the user wants cleanup, only *recommend*: this plugin never deletes, compacts or moves anything.
 
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+
+- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-memory`'s onboarding, which asks the user (AskUserQuestion) whether to create a personal memory and scan the mailbox. Respect a "not now" and continue here.
+- Apply the merged `settings` (`status.skip_com`, `store`, `language`).
+- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
+
 ## Output format
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-status/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
