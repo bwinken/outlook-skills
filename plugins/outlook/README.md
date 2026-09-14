@@ -16,7 +16,7 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 ## Hosts
 
 - **Claude Code**: installed as a plugin from the marketplace at the repo root; `${CLAUDE_PLUGIN_ROOT}` in the skill files is expanded by Claude Code.
-- **Zoo Code** (the community continuation of Roo Code, which was archived in May 2026; Zoo Code kept the `.roo` directory name) and other Agent Skills hosts: run `python install.py --zoo [--global]` or `--agents`. It copies `skills/<name>/*.md` into `.roo/skills/` (or `~/.roo/skills/`, `.agents/skills/`) and rewrites `${CLAUDE_PLUGIN_ROOT}` to this folder's absolute path, so the scripts here are called from the copies. `--uninstall` removes only what it created. SKILL.md frontmatter already satisfies the Agent Skills spec (name equals the directory, description under 1024 characters). Where a skill must ask the user something it names both question tools (AskUserQuestion / ask_followup_question).
+- **Zoo Code** and other Agent Skills hosts: `python install.py` copies `skills/<name>/*.md` into `~/.roo/skills/` (`--project` for `./.roo/skills/`, `--agents` for `.agents/skills/`) and rewrites `${CLAUDE_PLUGIN_ROOT}` to this folder's absolute path, so the scripts here run from the copies. `--uninstall` removes only what it created.
 
 ## Requirements
 
