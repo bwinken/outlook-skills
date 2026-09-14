@@ -16,7 +16,7 @@ Inside Claude Code:
 | Skill | Ask things like |
 |---|---|
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
-| `outlook-search` | 找 Alice 上週寄給我的信、有附件的未讀郵件 |
+| `outlook-search` | 找 Alice 上週寄給我的信、有附件的未讀郵件、模糊搜尋「上次跟供應商談價格的信」（可選 reranker） |
 | `outlook-thread` | 幫我摘要「Q3 預算」這串討論、結論和待辦是什麼 |
 | `outlook-calendar` | 今天有什麼會議、這週哪裡有空、有沒有撞期 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |

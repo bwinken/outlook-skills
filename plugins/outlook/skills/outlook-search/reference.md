@@ -4,7 +4,7 @@
 
 ```
 {
-  "Query":   { From, To, Subject, Body, Text, After, Before, HasAttachments, Unread, Folders[], Dasl, Max },
+  "Query":   { From, To, Subject, Body, Text, AnyOf[], After, Before, HasAttachments, Unread, Folders[], Dasl, Max },
   "Count":   <int>,
   "Results": [ <message summary>, ... ]     // newest first
 }
@@ -30,7 +30,7 @@ Message summary (shared with outlook-thread):
 | `FlagStatus` | 0 none / 1 completed / 2 flagged | |
 | `Categories` | string | comma separated |
 | `ConversationID`, `ConversationTopic` | string | |
-| `BodyPreview` | string | first 200 chars, whitespace collapsed |
+| `BodyPreview` | string | first `-PreviewLength` chars (default 200), whitespace collapsed |
 | `Body` | string | only with `-IncludeBody` |
 
 ## 2. Presentation templates
@@ -73,3 +73,27 @@ Rules:
 ---
 {Body, trimmed: drop quoted history below the first "From:"/"寄件者:" separator unless the user asks for it; cap at ~3000 chars with a note}
 ```
+
+## 3. Reranker output (`rerank.py`)
+
+```
+{
+  "Query":      <query text>,
+  "Gateway":    <endpoint URL used>,
+  "Model":      <model name>,
+  "Candidates": <int, mails sent>,
+  "Batches":    <int, requests made>,
+  "Count":      <int, results returned>,
+  "Results":    [ <message summary> + "Score": <float>, ... ]   // highest score first
+}
+```
+
+Presentation: same table as 2a with an extra leading `分數` column (two decimals), sorted by score. Add one line above the table:
+
+```
+已用 {Model} 對 {Candidates} 封候選郵件重新排序（{Batches} 批），最相關的前 {Count} 封：
+```
+
+Rules:
+- Scores from bge-reranker-v2-m3 are not probabilities; show them for relative comparison only. If the best score is low (e.g. below 0.2) say the match is weak.
+- Mention when the candidate set was cut by `-Max`: a relevant mail older than the window will not appear.

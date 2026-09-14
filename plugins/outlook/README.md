@@ -44,6 +44,26 @@ Neither layer changes any machine or user setting. The plugin never runs `Set-Ex
 
 What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the four COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
 
+## Fuzzy search with a reranker (optional)
+
+`outlook-search` falls back to a cross-encoder reranker for fuzzy / semantic queries. `scripts/rerank.py` sends `(query, message preview)` pairs to an OpenAI-compatible gateway (vLLM `/v1/rerank`, or `/v1/score` with `--endpoint score`) in batches of 30 and sorts the candidates by relevance. Default model: `bge-reranker-v2-m3`.
+
+Configure the gateway in `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "OUTLOOK_RERANK_URL": "http://your-vllm-host:8000/v1",
+    "OUTLOOK_RERANK_MODEL": "bge-reranker-v2-m3",
+    "OUTLOOK_RERANK_API_KEY": "optional-bearer-token"
+  }
+}
+```
+
+The same names work as process environment variables or as `--gateway` / `--model` / `--api-key` flags. A specific name always wins over a generic fallback (`OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL`, `OPENAI_API_KEY`, `ANTHROPIC_AUTH_TOKEN`) no matter where each is set. `python rerank.py --show-config` prints what would be used without sending anything; `--dry-run` prints the documents that would be sent.
+
+**Privacy**: subject, sender, date and a preview (default 600 characters of combined text) of every candidate leave the machine. The skill therefore asks the user for confirmation, naming the gateway and the number of mails, before every reranker call. Point it at an internal vLLM instance, not a public API.
+
 ## Output format
 
 Each skill ships a `reference.md` next to its `SKILL.md` documenting the script's JSON fields and the presentation template Claude should use in its reply (tables, sections, date formats, truncation rules). Change the template there, not in SKILL.md.
@@ -60,6 +80,7 @@ plugins/outlook/
     Get-OutlookThread.ps1
     Get-OutlookCalendar.ps1
     read_msg.py
+    rerank.py                 optional reranker client for fuzzy search (asks consent first)
   skills/
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md

@@ -11,6 +11,7 @@
     Search-OutlookMail.ps1 -From "alice" -After 2026-09-01 -Max 20
     Search-OutlookMail.ps1 -Subject "invoice" -HasAttachments -AllFolders
     Search-OutlookMail.ps1 -Folder "Inbox/Projects" -Unread -IncludeBody -OutFile hits.json
+    Search-OutlookMail.ps1 -AnyOf "報價","quote","pricing" -After 2026-06-01 -AllFolders -Max 300 -PreviewLength 500 -OutFile candidates.json
 #>
 [CmdletBinding()]
 param(
@@ -19,6 +20,7 @@ param(
     [string]$Subject = '',         # substring
     [string]$Body = '',            # substring in plain-text body
     [string]$Text = '',            # substring in subject OR body
+    [string[]]$AnyOf = @(),        # several terms, subject OR body, joined with OR (keyword expansion)
     [datetime]$After,
     [datetime]$Before,
     [switch]$HasAttachments,
@@ -28,6 +30,7 @@ param(
     [switch]$AllFolders,           # recurse through every mail folder of the store
     [int]$Max = 50,
     [switch]$IncludeBody,
+    [int]$PreviewLength = 200,     # BodyPreview length; raise to ~500 when feeding rerank.py
     [string]$OutFile = ''
 )
 
@@ -56,6 +59,15 @@ if ($Text) {
     $v = ConvertTo-DaslLiteral $Text
     $clauses += "(""urn:schemas:httpmail:subject"" LIKE '%$v%' OR ""urn:schemas:httpmail:textdescription"" LIKE '%$v%')"
 }
+if ($AnyOf.Count -gt 0) {
+    $ors = @()
+    foreach ($term in $AnyOf) {
+        if ([string]::IsNullOrWhiteSpace($term)) { continue }
+        $v = ConvertTo-DaslLiteral $term
+        $ors += ""urn:schemas:httpmail:subject" LIKE '%$v%' OR "urn:schemas:httpmail:textdescription" LIKE '%$v%'"
+    }
+    if ($ors.Count -gt 0) { $clauses += '(' + ($ors -join ' OR ') + ')' }
+}
 if ($HasAttachments) { $clauses += """urn:schemas:httpmail:hasattachment"" = 1" }
 if ($Unread)         { $clauses += """urn:schemas:httpmail:read"" = 0" }
 $dasl = if ($clauses.Count -gt 0) { '@SQL=' + ($clauses -join ' AND ') } else { '' }
@@ -81,7 +93,7 @@ foreach ($f in $folders) {
             $skip = $false
             if ($PSBoundParameters.ContainsKey('Before') -and $rt -ge $Before) { $skip = $true }
             if (-not $skip) {
-                $results += ConvertTo-OlMailSummary -Mail $item -IncludeBody:$IncludeBody
+                $results += ConvertTo-OlMailSummary -Mail $item -IncludeBody:$IncludeBody -PreviewLength $PreviewLength
             }
         }
         $item = $items.GetNext()
@@ -90,7 +102,7 @@ foreach ($f in $folders) {
 
 $out = [pscustomobject][ordered]@{
     Query = [pscustomobject][ordered]@{
-        From = $From; To = $To; Subject = $Subject; Body = $Body; Text = $Text
+        From = $From; To = $To; Subject = $Subject; Body = $Body; Text = $Text; AnyOf = @($AnyOf)
         After = if ($PSBoundParameters.ContainsKey('After')) { $After.ToString('s') } else { $null }
         Before = if ($PSBoundParameters.ContainsKey('Before')) { $Before.ToString('s') } else { $null }
         HasAttachments = [bool]$HasAttachments; Unread = [bool]$Unread
