@@ -45,6 +45,10 @@ The script first uses Outlook's conversation index; for POP/PST stores without c
    - participants (`Participants` field).
 4. Cite messages by date and sender, not by index.
 
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). Apply the merged `settings` (`search.default_folder`, `store`, `language`) and read every `memory` file it lists: memory.md holds the user's contact aliases, folder meanings, project keywords and preferences, so "Alice" or "供應商的信" may already be defined there. If the user tells you something worth keeping, offer to save it with `outlook-settings`; do not write memory silently. Details: `${CLAUDE_PLUGIN_ROOT}/skills/outlook-settings/reference.md`.
+
 ## Output format
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-thread/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.

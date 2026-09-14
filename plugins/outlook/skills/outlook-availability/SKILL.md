@@ -37,6 +37,10 @@ Options (same script as outlook-agenda):
 4. Present the slots table first, then the day's meetings for context (see reference.md). Recommend one slot when the user asked for one.
 5. If the range has no usable slot, say so and show the nearest options just outside working hours or on the next day.
 
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). Apply the merged `settings` (`working_hours.*`, `availability.min_slot_minutes`, `store`, `language`) and read every `memory` file it lists: memory.md holds the user's contact aliases, folder meanings, project keywords and preferences, so "Alice" or "供應商的信" may already be defined there. If the user tells you something worth keeping, offer to save it with `outlook-settings`; do not write memory silently. Details: `${CLAUDE_PLUGIN_ROOT}/skills/outlook-settings/reference.md`.
+
 ## Output format
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-availability/reference.md` before presenting results. It documents the JSON fields, the gap computation rules and the presentation template.

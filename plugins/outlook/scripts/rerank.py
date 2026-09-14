@@ -9,7 +9,8 @@ Usage:
     python rerank.py --query "上次跟供應商談價格的信" --input candidates.json --top 10
     python rerank.py --query "..." --input candidates.json --gateway http://gw:8000/v1 --model bge-reranker-v2-m3
 
-Configuration (CLI flag, else process environment, else "env" block of ~/.claude/settings.json):
+Configuration (CLI flag, else process environment, else the "rerank" section of .outlook-skills/settings.json
+(working directory over ~/.outlook-skills), else the "env" block of ~/.claude/settings.json):
     gateway : OUTLOOK_RERANK_URL (explicit override)  >  ANTHROPIC_BASE_URL (the default: the same
               gateway Claude Code already talks to)  >  OPENAI_BASE_URL
     model   : OUTLOOK_RERANK_MODEL, default bge-reranker-v2-m3
@@ -52,8 +53,28 @@ def _settings_env():
         return {}
 
 
+def _plugin_settings():
+    """rerank section of .outlook-skills settings (local over user), mapped to the env-style names."""
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import settings as ps  # settings.py next to this file
+        merged, _, _, _, _ = ps.resolve()
+        r = merged.get("rerank") or {}
+        out = {}
+        if r.get("gateway"):
+            out["OUTLOOK_RERANK_URL"] = str(r["gateway"])
+        if r.get("model"):
+            out["OUTLOOK_RERANK_MODEL"] = str(r["model"])
+        if r.get("api_key"):
+            out["OUTLOOK_RERANK_API_KEY"] = str(r["api_key"])
+        return out
+    except Exception:
+        return {}
+
+
 def resolve_config(args):
     senv = None
+    penv = _plugin_settings()
 
     def pick(cli, *names):
         # Specific names win over generic fallbacks regardless of where they are set:
@@ -67,6 +88,9 @@ def resolve_config(args):
             v = os.environ.get(n)
             if v:
                 return v, f"env:{n}"
+            v = penv.get(n)
+            if v:
+                return v, f".outlook-skills:{n}"
             v = senv.get(n)
             if v:
                 return v, f"settings.json:{n}"

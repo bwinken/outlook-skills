@@ -62,13 +62,13 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
    | Count | What to do |
    |---|---|
    | 0 | Relax one filter (wider dates, `-AllFolders`, fewer terms) and retry once. Then report what was tried. |
-   | 1 to 20 | Read directly. Show the list, or re-run with `-IncludeBody` on the same filters and answer from the bodies. No reranker. |
-   | 21 to 100 | Reranker **if** it is usable and the user agrees (step 4). Otherwise **local scan** (step 5). |
+   | 1 to `search.direct_read_max` (default 20) | Read directly. Show the list, or re-run with `-IncludeBody` on the same filters and answer from the bodies. No reranker. |
+   | `direct_read_max`+1 to 100 | Reranker **if** it is usable and the user agrees (step 4, or `rerank.auto_consent` is true). Otherwise **local scan** (step 5). |
    | over 100 | Narrow first: add a sender, tighter dates or more `-AnyOf` terms, or ask the user for one more constraint. If it cannot be narrowed, reranker if usable and agreed; otherwise local scan of the newest 100. |
 
 4. **Reranker** (sends data to a gateway, **consent required**):
    - Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config`. It resolves the gateway (by default the `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, overridable with `OUTLOOK_RERANK_URL`), then probes `/v1/rerank` and `/v1/score` with a one-word test request and reports `usable`, `endpoint` and `gateway`. Exit code 1 means no usable reranker: say so in one line, mention the settings names (see plugin README), and go to step 5. Do not guess a URL.
-   - **Ask the user before sending anything.** One short message: the gateway URL and model from `--show-config`, that subject, sender, date and a ~500-character preview of the `Count` candidates will be sent in batches of 30, and whether to go ahead. Use AskUserQuestion when available. Proceed only on a clear yes; a no goes to step 5.
+   - **Ask the user before sending anything** unless `rerank.auto_consent` is true in the settings (then state in one line what is being sent and where, and continue). One short message: the gateway URL and model from `--show-config`, that subject, sender, date and a ~500-character preview of the `Count` candidates will be sent in batches of 30, and whether to go ahead. Use AskUserQuestion when available. Proceed only on a clear yes; a no goes to step 5.
    - Rank: `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --query "<the user's request in their own words>" --input "<tmp>/candidates.json" --top 10`.
    - If the script exits non-zero mid-run (gateway error, timeout after its built-in retries, unexpected response), do not retry by hand: tell the user in one line which step failed and go to step 5.
    - Present the top results with their `Score` (see reference.md). Scores are relative; treat anything far below the best hit as noise. Offer to open the best hits with `-IncludeBody` or `outlook-thread`.
@@ -76,6 +76,10 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
 5. **Local scan** (the fallback; no network, nothing leaves the machine): read `<tmp>/candidates.json` yourself and judge relevance from `Subject`, `From` and `BodyPreview`. Pick up to 10 that match the request, newest first among equals. Present them with the 2a table and say plainly that no reranker was used and the pick is your own reading of the previews (see reference.md §4). If the previews are not enough to tell, re-run the search with `-IncludeBody` for the 5 most likely and read those. Then, if the answer is still uncertain, ask the user for one more constraint rather than guessing.
 
 Never send full bodies to the gateway (the script only sends previews), and never send candidates the user has not agreed to send.
+
+## Settings and memory
+
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). Apply the merged `settings` (`search.*` for default folder, lookback window, candidate cap and the direct-read threshold; `store`; `rerank.*` including `auto_consent`, which replaces the per-run consent question when true; `language`) and read every `memory` file it lists: memory.md holds the user's contact aliases, folder meanings, project keywords and preferences, so "Alice" or "供應商的信" may already be defined there. If the user tells you something worth keeping, offer to save it with `outlook-settings`; do not write memory silently. Details: `${CLAUDE_PLUGIN_ROOT}/skills/outlook-settings/reference.md`.
 
 ## Output format
 

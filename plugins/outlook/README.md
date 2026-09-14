@@ -10,6 +10,7 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook |
+| `outlook-settings` | The plugin's own settings and memory: working hours, defaults, reranker, remembered aliases and preferences |
 
 ## Requirements
 
@@ -26,7 +27,7 @@ This plugin **never writes to Outlook**. Concretely, no script or skill may:
 - set any property (`UnRead`, `Categories`, `FlagStatus`, `Importance`, `BusyStatus`, ...);
 - create items, folders, rules, or appointments;
 - compact, repair, detach or attach data files;
-- write anywhere except a user-specified `-OutFile` / `--extract-to` path.
+- write anywhere except a user-specified `-OutFile` / `--extract-to` path and the plugin's own `.outlook-skills/` folders.
 
 Reading through COM does not change read/unread state. The shared library `scripts/OutlookReadOnly.ps1` exposes only getters; add new skills on top of it and keep the same rule.
 
@@ -73,6 +74,17 @@ Example `~/.claude/settings.json`:
 
 **Privacy.** Subject, sender, date and a preview (default 600 characters of combined text) of every candidate leave the machine. The skill therefore asks the user for confirmation, naming the gateway and the number of mails, before every reranker call. Point it at an internal vLLM instance, not a public API.
 
+## Settings and memory
+
+The skills keep their own configuration outside Outlook, in two optional folders:
+
+| Folder | Scope |
+|---|---|
+| `~/.outlook-skills/` | the user, every project |
+| `./.outlook-skills/` (working directory or any parent up to home) | this project; overrides the user level key by key |
+
+Each holds `settings.json` (only the keys you changed), `settings.example.json` (all keys with defaults) and `memory.md`. `scripts/settings.py show` merges them and reports which file set each key; every skill runs it once per conversation and applies the result (working hours, default search window, default store, reranker gateway, reply language). `memory.md` is free-form Markdown where Claude keeps, only with the user's say-so, contact aliases, folder meanings, project keywords and preferences, never mail content. Use the `outlook-settings` skill to view or change either file. Add `.outlook-skills/` to `.gitignore` in a repo; memory.md contains names and addresses.
+
 ## Output format
 
 Each skill ships a `reference.md` next to its `SKILL.md` documenting the script's JSON fields and the presentation template Claude should use in its reply (tables, sections, date formats, truncation rules). Change the template there, not in SKILL.md.
@@ -90,6 +102,7 @@ plugins/outlook/
     Get-OutlookCalendar.ps1
     read_msg.py
     rerank.py                 optional reranker client for fuzzy search (asks consent first)
+    settings.py               merges ~/.outlook-skills and ./.outlook-skills settings; init / set / memory
   skills/
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md
@@ -97,6 +110,7 @@ plugins/outlook/
     outlook-agenda/    SKILL.md + reference.md
     outlook-availability/ SKILL.md + reference.md   (same script as agenda)
     outlook-open-msg/  SKILL.md + reference.md
+    outlook-settings/  SKILL.md + reference.md
 ```
 
 Skills reference scripts via `${CLAUDE_PLUGIN_ROOT}`, which Claude Code resolves to the installed plugin directory.
