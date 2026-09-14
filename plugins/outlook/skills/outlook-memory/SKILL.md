@@ -28,7 +28,7 @@ The overview script has the same execution-policy fallback as the other PowerShe
 
 `settings.py show` returns `first_run: true` when `~/.outlook-skills` does not exist. Any skill that sees this hands over here **once per conversation**:
 
-1. Ask with the host's structured question tool (Claude Code: **AskUserQuestion**; Roo Code: **ask_followup_question**), never as plain text:
+1. Ask with the host's structured question tool (Claude Code: **AskUserQuestion**; Zoo Code / Roo Code: **ask_followup_question**), never as plain text:
    - question: 這是第一次使用 Outlook skills。要建立個人化記憶嗎？我會唯讀掃描最近幾個月的信箱，整理出常聯絡的人、資料夾用途、常見專案主題和固定會議，存成本機的 Markdown 檔（`~/.outlook-skills/memory/`），之後搜尋和摘要時就能認得「Alice」「供應商的信」這類說法。
    - options: 「建立並掃描信箱」(Recommended) / 「只建立空的記憶，不掃描」/ 「這次先不要」.
    - A "not now" answer means: continue the original task, do not ask again this conversation, and do not create anything.
@@ -36,7 +36,7 @@ The overview script has the same execution-policy fallback as the other PowerShe
 3. On "build and scan":
    - `settings.py init`, then run `Get-OutlookOverview.ps1 -Days 180 -OutFile "<tmp>/overview.json"` (use `-Store` from settings if set). It returns counts only, no bodies.
    - Draft notes from the JSON, following reference.md §2 for what each category takes and how to name titles. Aim for quality over quantity: roughly 10 to 25 people, every folder with a clear purpose, 5 to 15 projects/topics, all recurring meetings, and skip newsletters unless the user wants them.
-   - Show the draft as a table (title, category, tags, one-line content) and ask with the same question tool: 「全部寫入」/「讓我挑」/「取消」. For "let me pick", ask a multi-select question listing the titles (Roo Code has no multi-select: list the titles numbered and ask which numbers to keep).
+   - Show the draft as a table (title, category, tags, one-line content) and ask with the same question tool: 「全部寫入」/「讓我挑」/「取消」. For "let me pick", ask a multi-select question listing the titles (Zoo Code has no multi-select: list the titles numbered and ask which numbers to keep).
    - Write the approved notes with `memory.py new --source bootstrap`, one call per note. Report how many were written per category and where.
 4. Mention once that `.outlook-skills/` should be in `.gitignore` if the working directory is a git repo.
 
