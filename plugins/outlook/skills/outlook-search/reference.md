@@ -109,3 +109,16 @@ Rules:
 - Scores from bge-reranker-v2-m3 are not probabilities; show them for relative comparison only.
 - Mention when the candidate set was cut by `-Max`: a relevant mail older than the window will not appear.
 - Reranked rows keep their `EntryID`; hand the best one to `outlook-thread` when the user wants the whole conversation.
+
+## 4. Local-scan output (no reranker)
+
+When the reranker is unavailable, declined, or failed, and Claude picked results by reading the previews itself, use the 2a table without a score column and put this line above it:
+
+```
+未使用 reranker（{原因：未設定 / 你選擇不送出 / gateway 回應錯誤}）。以下是我從 {Candidates} 封候選郵件的主旨與預覽中挑出的 {N} 封：
+```
+
+Rules:
+- Keep the reason short and factual; do not repeat the gateway error text unless the user asks.
+- Say when the pick is uncertain and what one extra constraint (sender, month, folder) would make it reliable.
+- The candidate JSON already sits on disk; do not re-run the search unless adding `-IncludeBody` for a handful of likely hits.
