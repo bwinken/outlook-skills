@@ -75,18 +75,42 @@ Example `~/.claude/settings.json`:
 
 **Privacy.** Subject, sender, date and a preview (default 600 characters of combined text) of every candidate leave the machine. The skill therefore asks the user for confirmation, naming the gateway and the number of mails, before every reranker call. Point it at an internal vLLM instance, not a public API.
 
-## Settings and memory
+## Settings
 
-The skills keep their own configuration outside Outlook, in two optional folders:
+The skills keep their own configuration outside Outlook, in two optional folders; the working-directory layer overrides the user layer key by key:
 
 | Folder | Scope |
 |---|---|
 | `~/.outlook-skills/` | the user, every project |
-| `./.outlook-skills/` (working directory or any parent up to home) | this project; overrides the user level key by key |
+| `./.outlook-skills/` (working directory or any parent up to home) | this project |
 
-**Settings**: `settings.json` holds only the keys you changed (`settings.example.json` lists them all). `scripts/settings.py show` merges the layers, reports which file set each key, and every skill runs it once per conversation (working hours, default search window, default store, reranker gateway, reply language). Change with the `outlook-settings` skill or `settings.py set key value`.
+`settings.json` holds only the keys you changed; `settings.example.json` lists them all with defaults (working hours, minimum free slot, default search window and folder, default store, reranker gateway and consent, reply language). `scripts/settings.py show` merges the layers and reports which file set each key; every skill runs it once per conversation. Change values with the `outlook-settings` skill or `settings.py set key value [--local]`.
 
-**Memory**: `memory/<category>/<title>.md`, one Markdown file per person, folder, project, routine or preference, with YAML front matter (`title`, `category`, `tags`, `created`, `updated`, `source`). Categories: `people`, `folders`, `projects`, `preferences`, `recurring`. `scripts/memory.py` creates, finds, appends to and removes notes and keeps the timestamps; skills only read the index and open the notes a request needs. The first time any skill runs and `~/.outlook-skills` is missing, `outlook-memory` asks whether to build a personal memory: with a yes it runs `Get-OutlookOverview.ps1` (read-only, counts only, no bodies) over the last 180 days, drafts notes about frequent contacts, folders, topics and recurring meetings, shows the draft, and writes only what the user approves. Later, "記住 …" appends to an existing note when one matches or creates a new one. Nothing is written without the user's say-so, and mail bodies never go into memory. Add `.outlook-skills/` to `.gitignore` in a repo; the notes contain names and addresses.
+## Memory
+
+Memory is what lets the skills understand the user's own vocabulary: that "Alice" is alice.chen@contoso.com, that "the vendor mails" live in `Inbox/Vendors`, that "the budget thread" means the Q3 budget project. It lives next to the settings, never inside Outlook.
+
+**Files.** `memory/<category>/<title>.md`, one Markdown file per topic, in the same two layers as settings. Categories: `people`, `folders`, `projects`, `recurring`, `preferences`. Each file starts with YAML front matter that `scripts/memory.py` maintains:
+
+```
+---
+title: Alice Chen
+category: people
+tags: [legal, contoso]
+created: 2026-09-14T10:02:11
+updated: 2026-09-14T13:40:05
+source: bootstrap
+---
+- 法務窗口，alice.chen@contoso.com
+```
+
+The title is the name someone would use to find the note again (a person's name, a folder path, a project's short name, a meeting subject). Related facts go into the existing file (`memory.py append`), which bumps `updated`; `memory.py find` searches title, tags and body so duplicates are avoided.
+
+**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `Get-OutlookOverview.ps1` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
+
+**Everyday use.** "記住 …" appends or creates a note; "忘掉 …" removes one and says what was removed; "你記得什麼" lists titles by category; "重新掃描信箱" re-runs the overview and proposes only new or changed notes. Other skills read just the index (title, category, tags, updated) and open a note only when a request names a person, folder, project or routine.
+
+**Boundaries.** Nothing is written without the user's say-so. Mail bodies, attachments and credentials never go into memory. The notes contain names and addresses, so add `.outlook-skills/` to `.gitignore` in a repo.
 
 ## Output format
 
