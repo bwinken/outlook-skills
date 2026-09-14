@@ -13,6 +13,14 @@ Read-only overview of the local Outlook setup. Nothing in Outlook is modified.
 powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookStatus.ps1"
 ```
 
+If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
+
+```
+powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookStatus.ps1')))"
+```
+
+Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+
 Options:
 - `-OutFile <path>`: write JSON to a file instead of stdout (use for large mailboxes).
 - `-SkipCom`: only inspect the registry and file system; do not connect to Outlook. Use this when Outlook is not installed, is New Outlook, or the user does not want Outlook launched.
@@ -31,6 +39,10 @@ Options:
 - Summarise in a short table: store name, type, file path, size, Inbox unread count.
 - Point out orphaned data files (on disk but not in `Stores`) and stores close to typical size limits (50 GB for modern .pst/.ost).
 - If the user wants cleanup, only *recommend*: this plugin never deletes, compacts or moves anything.
+
+## Output format
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-status/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
 
 ## Read-only rules
 

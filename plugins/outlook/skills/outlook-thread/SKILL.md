@@ -13,6 +13,14 @@ Read-only conversation reader. Nothing in Outlook is modified.
 powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookThread.ps1" [selector] [options]
 ```
 
+If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
+
+```
+powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookThread.ps1'))) [selector]  [options]"
+```
+
+Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+
 Selectors (use one):
 - `-EntryID <id>`: precise, from `outlook-search` output.
 - `-ConversationID <id>`: from `outlook-search` output.
@@ -36,6 +44,10 @@ The script first uses Outlook's conversation index; for POP/PST stores without c
    - open questions / who is waiting on whom,
    - participants (`Participants` field).
 4. Cite messages by date and sender, not by index.
+
+## Output format
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-thread/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
 
 ## Read-only rules
 

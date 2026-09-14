@@ -3,6 +3,11 @@
     READ-ONLY. Searches mail items by sender, subject, body, date range, attachments and unread state.
 
 .EXAMPLE
+    # Normal:
+    powershell -NoProfile -ExecutionPolicy Bypass -File <this script> [args]
+    # Execution policy enforced by Group Policy:
+    powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='<scripts dir>'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '<scripts dir>\<this script>'))) [args]"
+
     Search-OutlookMail.ps1 -From "alice" -After 2026-09-01 -Max 20
     Search-OutlookMail.ps1 -Subject "invoice" -HasAttachments -AllFolders
     Search-OutlookMail.ps1 -Folder "Inbox/Projects" -Unread -IncludeBody -OutFile hits.json
@@ -26,7 +31,13 @@ param(
     [string]$OutFile = ''
 )
 
-Import-Module (Join-Path $PSScriptRoot 'OutlookReadOnly.psm1') -Force
+# ---- Load the shared read-only helpers without going through the execution policy.
+#      $PSScriptRoot is set when run with -File; when run via -Command/[scriptblock]::Create it is
+#      empty, so the caller sets OUTLOOK_SKILLS_SCRIPTS to this folder instead.
+$scriptsDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($env:OUTLOOK_SKILLS_SCRIPTS) { $env:OUTLOOK_SKILLS_SCRIPTS } else {
+    throw 'Cannot locate OutlookReadOnly.ps1. Run with -File, or set $env:OUTLOOK_SKILLS_SCRIPTS to the plugin scripts folder.'
+}
+. ([scriptblock]::Create((Get-Content -Raw -LiteralPath (Join-Path $scriptsDir 'OutlookReadOnly.ps1'))))
 Initialize-OutlookConsole
 
 # ---- Build DASL filter for the text/flag criteria (dates are applied in-process for exactness)

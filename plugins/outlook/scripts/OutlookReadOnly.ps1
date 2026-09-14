@@ -12,9 +12,12 @@
     "New Outlook" (olk.exe) has no COM object model and is not supported.
 
     Recommended host: Windows PowerShell 5.1 (powershell.exe). PowerShell 7 also works.
-#>
 
-Set-StrictMode -Version 2.0
+    This file is a plain script library, not a module, on purpose: the skill scripts load it
+    with  . ([scriptblock]::Create((Get-Content -Raw <path>)))  which is not subject to the
+    PowerShell execution policy. Import-Module on a .psm1 would be blocked on machines where
+    Group Policy enforces Restricted/AllSigned.
+#>
 
 # Outlook default folder constants (OlDefaultFolders)
 $script:OlFolder = @{
@@ -297,5 +300,3 @@ function ConvertTo-DaslLiteral {
     param([string]$Value)
     return ($Value -replace "'", "''")
 }
-
-Export-ModuleMember -Function Initialize-OutlookConsole, Connect-Outlook, Get-OutlookApplication, Get-OlDefaultFolder, Get-OlStores, Get-OlFolder, Get-OlMailFoldersRecursive, Get-OlSenderSmtp, Get-OlRecipientList, Get-OlAttachmentList, ConvertTo-OlMailSummary, ConvertTo-OlAppointmentSummary, Write-OlJson, ConvertTo-DaslLiteral

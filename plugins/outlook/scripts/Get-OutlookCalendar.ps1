@@ -3,6 +3,11 @@
     READ-ONLY. Lists calendar items in a date range (recurrences expanded) and flags overlaps.
 
 .EXAMPLE
+    # Normal:
+    powershell -NoProfile -ExecutionPolicy Bypass -File <this script> [args]
+    # Execution policy enforced by Group Policy:
+    powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='<scripts dir>'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '<scripts dir>\<this script>'))) [args]"
+
     Get-OutlookCalendar.ps1                       # today
     Get-OutlookCalendar.ps1 -Days 7               # next 7 days
     Get-OutlookCalendar.ps1 -Start 2026-09-15 -End 2026-09-20 -OutFile cal.json
@@ -17,7 +22,13 @@ param(
     [string]$OutFile = ''
 )
 
-Import-Module (Join-Path $PSScriptRoot 'OutlookReadOnly.psm1') -Force
+# ---- Load the shared read-only helpers without going through the execution policy.
+#      $PSScriptRoot is set when run with -File; when run via -Command/[scriptblock]::Create it is
+#      empty, so the caller sets OUTLOOK_SKILLS_SCRIPTS to this folder instead.
+$scriptsDir = if ($PSScriptRoot) { $PSScriptRoot } elseif ($env:OUTLOOK_SKILLS_SCRIPTS) { $env:OUTLOOK_SKILLS_SCRIPTS } else {
+    throw 'Cannot locate OutlookReadOnly.ps1. Run with -File, or set $env:OUTLOOK_SKILLS_SCRIPTS to the plugin scripts folder.'
+}
+. ([scriptblock]::Create((Get-Content -Raw -LiteralPath (Join-Path $scriptsDir 'OutlookReadOnly.ps1'))))
 Initialize-OutlookConsole
 
 if (-not $PSBoundParameters.ContainsKey('End')) { $End = $Start.Date.AddDays($Days) }

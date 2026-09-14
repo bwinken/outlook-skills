@@ -13,6 +13,14 @@ Read-only calendar listing. Nothing in Outlook is modified.
 powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookCalendar.ps1" [options]
 ```
 
+If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
+
+```
+powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookCalendar.ps1'))) [options]"
+```
+
+Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+
 Options:
 - default: today (local time).
 - `-Days 7`: from today for N days.
@@ -33,6 +41,10 @@ Options:
 2. Present an agenda grouped by day: time, subject, location, organizer, your response status. Mark conflicts and meetings still `NotResponded`.
 3. For "when am I free": compute gaps between busy items inside working hours (assume 09:00 to 18:00 local unless the user says otherwise) and list them.
 4. For meeting prep, take attendee names from an item and hand them to `outlook-search -From ...` to gather recent mails.
+
+## Output format
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-calendar/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
 
 ## Read-only rules
 

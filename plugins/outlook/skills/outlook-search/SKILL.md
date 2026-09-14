@@ -13,6 +13,14 @@ Read-only mail search through Outlook COM automation. Results are returned as JS
 powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Search-OutlookMail.ps1" [options]
 ```
 
+If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
+
+```
+powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Search-OutlookMail.ps1'))) [options]"
+```
+
+Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+
 Options (all optional, combine freely):
 
 | Option | Meaning |
@@ -40,6 +48,10 @@ Text matching is case-insensitive substring. Quote values containing spaces.
 2. Run the script. If it errors with "Cannot start Outlook COM automation", tell the user Classic Outlook is required and suggest `outlook-status -SkipCom` to check the setup.
 3. Present hits as a table: date, from, subject, folder, attachments. Keep `EntryID` handy: `outlook-thread` accepts it to open the full conversation.
 4. For "read this mail in full", re-run with `-IncludeBody -Max 1` and the specific filters, or hand the EntryID to `outlook-thread`.
+
+## Output format
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-search/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
 
 ## Read-only rules
 

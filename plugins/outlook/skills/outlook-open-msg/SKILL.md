@@ -28,6 +28,10 @@ Requirements: `.eml` needs only Python 3. `.msg` needs `pip install extract-msg`
 3. For a phishing or delivery question, re-run with `--headers` and check: sender address vs display name, Reply-To differing from From, `Authentication-Results` (SPF / DKIM / DMARC), the chain of `Received` hops, and attachment types. Report findings; do not open attachments.
 4. Multiple files: pass them all at once; JSON output becomes an array.
 
+## Output format
+
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-open-msg/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
+
 ## Read-only rules
 
 Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never edit or re-save the .msg/.eml. Never execute or open extracted attachments.
