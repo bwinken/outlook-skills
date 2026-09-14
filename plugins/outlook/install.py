@@ -8,13 +8,12 @@ directory and rewrites ${CLAUDE_PLUGIN_ROOT} to this folder's absolute path. Scr
 one place; only SKILL.md and reference.md are copied.
 
 Usage:
-    python install.py --zoo              # ./.roo/skills/<name>/          (this project; Zoo Code and Roo Code both read .roo)
-    python install.py --zoo --global     # ~/.roo/skills/<name>/          (all projects)
-    python install.py --roo              # same as --zoo
-    python install.py --agents           # ./.agents/skills/<name>/       (Agent Skills standard path)
+    python install.py                    # default: ~/.roo/skills/<name>/  (Zoo Code, all projects)
+    python install.py --project          # ./.roo/skills/<name>/           (this project only)
+    python install.py --agents           # ~/.agents/skills/<name>/        (Agent Skills standard path; --project for ./)
     python install.py --dest <dir>       # any directory
-    python install.py --zoo --uninstall  # remove what a previous run created
-    python install.py --zoo --dry-run
+    python install.py --uninstall        # remove what a previous run created
+    python install.py --dry-run
 
 Re-run after pulling updates; existing copies are replaced.
 """
@@ -32,12 +31,8 @@ MARKER = ".installed-by-outlook-skills"
 def dest_dir(args) -> Path:
     if args.dest:
         return Path(args.dest).expanduser().resolve()
-    base = Path.home() if args.global_ else Path.cwd()
-    if args.roo or args.zoo:
-        return base / ".roo" / "skills"
-    if args.agents:
-        return base / ".agents" / "skills"
-    raise SystemExit("Choose --zoo (or --roo), --agents or --dest <dir>.")
+    base = Path.cwd() if args.project else Path.home()
+    return base / (".agents" if args.agents else ".roo") / "skills"
 
 
 def rewrite(text: str, root: Path) -> str:
@@ -80,11 +75,9 @@ def uninstall(dest: Path, dry: bool):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--zoo", action="store_true", help="Zoo Code: .roo/skills/ (Zoo Code kept Roo Code's directory name)")
-    ap.add_argument("--roo", action="store_true", help="same as --zoo")
-    ap.add_argument("--agents", action="store_true", help="Agent Skills standard: .agents/skills/")
+    ap.add_argument("--project", action="store_true", help="install under the current directory instead of the home directory")
+    ap.add_argument("--agents", action="store_true", help="use .agents/skills/ instead of .roo/skills/")
     ap.add_argument("--dest", help="explicit skills directory")
-    ap.add_argument("--global", dest="global_", action="store_true", help="use the home directory instead of the current directory")
     ap.add_argument("--uninstall", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
