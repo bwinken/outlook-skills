@@ -1,15 +1,26 @@
 # outlook-skills
 
-A Claude Code plugin marketplace with **read-only** skills for a local Windows Outlook (Classic) mailbox.
+**Read-only** skills for a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace and installable into Zoo Code (Roo Code's successor) or any Agent Skills host.
 
 ## Install
 
-Inside Claude Code:
+**Claude Code**（plugin marketplace）：
 
 ```
 /plugin marketplace add bwinken/outlook-skills
 /plugin install outlook@outlook-skills
 ```
+
+**Zoo Code**（Roo Code 的社群接續版，Roo 已於 2026 年 5 月封存；兩者都讀 `.roo/skills/`）：clone 這個 repo，然後在你的專案目錄執行
+
+```
+python <clone>/plugins/outlook/install.py --zoo            # 裝到 ./.roo/skills/，只有這個專案
+python <clone>/plugins/outlook/install.py --zoo --global   # 裝到 ~/.roo/skills/，所有專案
+```
+
+Zoo Code 沿用了 Roo 的目錄名，所以路徑仍是 `.roo/`，不是 `.zoo/`。其他讀 `.agents/skills/` 的工具用 `--agents`。腳本會把每個 skill 的 SKILL.md 與 reference.md 複製過去，並把 Claude Code 專用的 `${CLAUDE_PLUGIN_ROOT}` 換成 clone 的絕對路徑；PowerShell 與 Python 腳本仍留在 clone 裡執行，所以 clone 不要移動，更新後重跑一次 install.py 即可。設定與記憶（`~/.outlook-skills/`）兩邊共用。
+
+兩個 host 的差異只有詢問使用者的工具：Claude Code 用 AskUserQuestion，Zoo Code 用 ask_followup_question，SKILL.md 兩者都有寫。斜線指令在 Claude Code 是 `/outlook:outlook-search`；在 Zoo Code 直接用自然語言觸發，或用 skill 工具指名。
 
 ## Skills
 
@@ -74,6 +85,7 @@ source: bootstrap
 ```
 .claude-plugin/marketplace.json   marketplace manifest
 plugins/outlook/                  the plugin (skills + scripts)
+plugins/outlook/install.py        copies the skills into .roo/skills (Zoo Code) or .agents/skills for other hosts
 ```
 
 ## Roadmap ideas

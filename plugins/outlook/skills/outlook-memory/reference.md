@@ -58,7 +58,7 @@ Onboarding draft (before writing anything):
 共 {N} 條：people {a}、folders {b}、projects {c}、recurring {d}。
 ```
 
-Then the AskUserQuestion. After writing: `已寫入 {N} 條到 ~/.outlook-skills/memory/（people 12、folders 6、projects 8、recurring 3）`.
+Then the question. After writing: `已寫入 {N} 條到 ~/.outlook-skills/memory/（people 12、folders 6、projects 8、recurring 3）`.
 
 "What do you remember" (`memory.py list`):
 

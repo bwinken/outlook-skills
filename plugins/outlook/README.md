@@ -13,6 +13,11 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
 | `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
 
+## Hosts
+
+- **Claude Code**: installed as a plugin from the marketplace at the repo root; `${CLAUDE_PLUGIN_ROOT}` in the skill files is expanded by Claude Code.
+- **Zoo Code** (the community continuation of Roo Code, which was archived in May 2026; Zoo Code kept the `.roo` directory name) and other Agent Skills hosts: run `python install.py --zoo [--global]` or `--agents`. It copies `skills/<name>/*.md` into `.roo/skills/` (or `~/.roo/skills/`, `.agents/skills/`) and rewrites `${CLAUDE_PLUGIN_ROOT}` to this folder's absolute path, so the scripts here are called from the copies. `--uninstall` removes only what it created. SKILL.md frontmatter already satisfies the Agent Skills spec (name equals the directory, description under 1024 characters). Where a skill must ask the user something it names both question tools (AskUserQuestion / ask_followup_question).
+
 ## Requirements
 
 - Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook-status -SkipCom` still works there.
@@ -106,7 +111,7 @@ source: bootstrap
 
 The title is the name someone would use to find the note again (a person's name, a folder path, a project's short name, a meeting subject). Related facts go into the existing file (`memory.py append`), which bumps `updated`; `memory.py find` searches title, tags and body so duplicates are avoided.
 
-**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `Get-OutlookOverview.ps1` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
+**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion in Claude Code, ask_followup_question in Zoo Code) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `Get-OutlookOverview.ps1` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
 
 **Everyday use.** "記住 …" appends or creates a note; "忘掉 …" removes one and says what was removed; "你記得什麼" lists titles by category; "重新掃描信箱" re-runs the overview and proposes only new or changed notes. Other skills read just the index (title, category, tags, updated) and open a note only when a request names a person, folder, project or routine.
 
@@ -155,6 +160,7 @@ Each skill ships a `reference.md` next to its `SKILL.md` documenting the script'
 ```
 plugins/outlook/
   .claude-plugin/plugin.json
+  install.py                installer for Zoo Code (.roo/skills) / .agents/skills hosts
   scripts/
     OutlookReadOnly.ps1       shared read-only COM helpers (dot-sourced, not a module)
     Get-OutlookStatus.ps1
