@@ -61,6 +61,8 @@ Rules:
 
 ### 2b. Single message card (when the user asks to read one mail, run with `-IncludeBody -Max 1`)
 
+Before showing the card, run the quick phishing check from the plugin README ("Phishing warnings") on `From` vs `FromAddress`, `Attachments[].FileName`, and the body's links and asks. COM output has no SPF/DKIM data, so say that the check is partial. A 🚨 or ⚠️ verdict goes above the card and all links are defanged. In the 2a list, put 🚨 before the subject of any hit whose sender name and address disagree in a look-alike way, and say so above the table.
+
 ```
 **{Subject}**
 寄件者：{From} <{FromAddress}>

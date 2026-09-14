@@ -25,7 +25,7 @@ Requirements: `.eml` needs only Python 3. `.msg` needs `pip install extract-msg`
 
 1. Run with `--format markdown` for a quick read, or json when you need to post-process.
 2. Present: from, to/cc, date, subject, attachment names and sizes, then the body (trim long quoted history).
-3. For a phishing or delivery question, re-run with `--headers` and check: sender address vs display name, Reply-To differing from From, `Authentication-Results` (SPF / DKIM / DMARC), the chain of `Received` hops, and attachment types. Report findings; do not open attachments.
+3. **Always** run the quick phishing check (plugin README, "Phishing warnings") before presenting: display name vs address, Reply-To, risky attachment types, look-alike domains, credential or payment asks. If it trips, the 🚨 / ⚠️ warning goes first and every link is defanged. For a phishing or delivery question, re-run with `--headers` and add the full table from reference.md §2b (SPF / DKIM / DMARC from `Authentication-Results`, the `Received` chain). Never open attachments; refuse `--extract-to` on a 🚨 mail.
 4. Multiple files: pass them all at once; JSON output becomes an array.
 
 ## Settings and memory

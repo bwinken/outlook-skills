@@ -112,6 +112,40 @@ The title is the name someone would use to find the note again (a person's name,
 
 **Boundaries.** Nothing is written without the user's say-so. Mail bodies, attachments and credentials never go into memory. The notes contain names and addresses, so add `.outlook-skills/` to `.gitignore` in a repo.
 
+## Phishing warnings
+
+Whenever a skill shows the content of a single mail (`outlook-open-msg`, `outlook-search` with `-IncludeBody`, `outlook-thread`), Claude first runs a quick phishing check and, if it trips, warns **before anything else** in the reply. The warning must be impossible to miss: it comes first, uses the 🚨 banner below, names the concrete signals, and tells the user what not to do. Soft wording ("might be worth checking") is not acceptable for a high-risk verdict.
+
+Levels:
+
+| Level | When | Reply |
+|---|---|---|
+| 🚨 高風險 | two or more strong signals, or one strong signal plus a request for credentials, payment or urgent action | banner first, then the message card with all links defanged; do not summarise the mail's call to action as if it were legitimate |
+| ⚠️ 可疑 | one strong signal, or several weak ones | one bold warning line above the card, links defanged |
+| none | nothing tripped | normal card; say "看起來正常" only when asked, never "安全" |
+
+Strong signals: display name and address disagree (「Microsoft Support」 from a non-Microsoft domain); Reply-To differs from From; SPF, DKIM or DMARC `fail` in `Authentication-Results`; a look-alike domain (`micros0ft`, `contoso-secure.ru`); an attachment of a risky type (.html, .htm, .iso, .img, .lnk, .js, .vbs, .zip with such content, macro-enabled Office files); a link whose visible text and target differ; a login or password-reset link to a domain that is not the claimed sender's.
+Weak signals: urgency or threats (帳號將被停用、24 小時內), generic greeting, unexpected invoice or delivery notice, external sender writing about internal matters, first-time sender asking for a bank change.
+
+Banner (Traditional Chinese by default; translate for an English user):
+
+```
+🚨 **警告：這封信很可能是釣魚信，請勿點擊連結、開啟附件或回覆。** 🚨
+
+判斷依據：
+- 顯示名稱「Microsoft Support」，但寄件地址是 support@mail-secure-login.ru
+- SPF 與 DKIM 皆為 fail
+- 附件 invoice.html 是釣魚常用的檔案類型
+
+建議：在 Outlook 用「回報 > 釣魚」或轉交 IT；如果已經點過連結或輸入過密碼，立刻更改密碼並通知 IT。
+```
+
+Rules for both warning levels:
+- Defang every URL from the suspicious mail: `hxxps://login[.]contoso-secure[.]ru/reset`. Never leave a clickable link.
+- Do not extract or open attachments from a 🚨 mail even if the user asks; explain why once and offer the header analysis instead.
+- In lists (search results, thread timelines) mark such messages with 🚨 in the subject cell and say so above the table.
+- The verdict is a judgement, not a scan result: say what was checked and what was not (for example, no header data in COM output, so SPF/DKIM unknown).
+
 ## Output format
 
 Each skill ships a `reference.md` next to its `SKILL.md` documenting the script's JSON fields and the presentation template Claude should use in its reply (tables, sections, date formats, truncation rules). Change the template there, not in SKILL.md.

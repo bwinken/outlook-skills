@@ -57,6 +57,7 @@ Match the user's language; labels below are Traditional Chinese.
 ```
 
 Rules:
+- Safety first: run the quick phishing check from the plugin README ("Phishing warnings") on every message (`From` vs `FromAddress`, attachment types, links and asks in the body). If any message trips, put the 🚨 / ⚠️ warning above the summary, mark that message with 🚨 in the timeline, defang its links, and do not present its request as an action item.
 - Read messages oldest first. Ignore quoted history inside each body: everything after the first `From:` / `寄件者:` / `-----Original Message-----` / `On … wrote:` line is a copy of an earlier message.
 - Attribute every decision and action item to a sender and date. Never invent owners or due dates; write `未定` when not stated.
 - Time axis: one line per message, at most 15 rows. For longer threads group by day and summarise.
