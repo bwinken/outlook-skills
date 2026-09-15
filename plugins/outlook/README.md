@@ -4,6 +4,7 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 
 | Skill | What it does |
 |---|---|
+| `outlook-setup` | First-run wizard: settings one by one, mailbox scan proposing up to 10 memory notes approved individually, reply-habit profile; re-runnable |
 | `outlook-status` | Outlook version, profiles, accounts, .pst/.ost files, folder counts |
 | `outlook-search` | Search mail by sender, subject, body, date, attachments, unread; fuzzy search; attachment search and consented copy-out |
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
@@ -100,7 +101,7 @@ source: bootstrap
 
 The title is the name someone would use to find the note again (a person's name, a folder path, a project's short name, a meeting subject). Related facts go into the existing file (`memory.py append`), which bumps `updated`; `memory.py find` searches title, tags and body so duplicates are avoided.
 
-**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion in Claude Code, ask_followup_question in Zoo Code) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `outlook_overview.py` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
+**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-setup`: one confirmation question, then settings one item at a time with clickable options, then `outlook_overview.py` (last 180 days, counts only, no bodies) from which at most 10 memory notes are proposed and approved one by one, then `outlook_style.py` builds `profile.md` (reply rate per sender, latency, length, language, greetings, closings, signature). Every write follows a yes in a question dialog. Setup can be re-run in full or per stage.
 
 **Everyday use.** "記住 …" appends or creates a note; "忘掉 …" removes one and says what was removed; "你記得什麼" lists titles by category; "重新掃描信箱" re-runs the overview and proposes only new or changed notes. Other skills read just the index (title, category, tags, updated) and open a note only when a request names a person, folder, project or routine.
 
@@ -156,7 +157,8 @@ plugins/outlook/
     outlook_search.py
     outlook_thread.py
     outlook_calendar.py       used by outlook-agenda and outlook-availability
-    outlook_overview.py       read-only mailbox overview for memory onboarding
+    outlook_overview.py       read-only mailbox overview for setup stage 3
+    outlook_style.py          reply-habit and writing-style statistics for profile.md
     outlook_followup.py       unanswered mails, sent or received
     outlook_attachments.py    attachment search, filter, sort, SaveAsFile copy-out
     outlook_meeting_prep.py   meeting briefing data
@@ -167,6 +169,7 @@ plugins/outlook/
     memory.py                 memory notes: list / find / new / append / touch / remove
   tests/                      fake Outlook object model + script tests (no Windows needed)
   skills/
+    outlook-setup/     SKILL.md + reference.md
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md
     outlook-thread/    SKILL.md + reference.md

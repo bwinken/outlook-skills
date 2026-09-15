@@ -43,7 +43,7 @@ Newsletters (`Newsletters` list, senders with a List-Unsubscribe header) are not
 
 ## 4. Presenting
 
-Onboarding draft (before writing anything):
+Onboarding draft table (used by outlook-setup stage 3):
 
 ```
 從最近 180 天的 1,842 封郵件與行事曆整理出以下記憶草稿（只存摘要，不存內文）：
@@ -99,3 +99,31 @@ Show the body of a single note with `memory.py show` when asked.
 Presenting `show`:
 
 ```
+
+## 6. Presenting the profile
+
+`settings.py profile show` returns `profile.md` (template and field meanings: `../outlook-setup/reference.md` §4). Do not paste the file; read it out in the user's language:
+
+```
+## 你的回信習慣（最近 180 天，寄出 312 封，分析於 09/16）
+
+**回誰、不回誰**
+- 整體回覆率 62%（排除電子報）。
+- 幾乎都回：Cassie Tsai（95%）、David WY Chen（88%）。
+- 從不回：newsletter@vendor.com（12 封）、notifications@jira（40 封）。
+- 電子報與通知 14 個來源一律不回。
+
+**多快、多長、什麼語言**
+- 通常 3.5 小時內回，四分之三在一天內；上午 9 到 11 點和下午 2 到 5 點寄得最多。
+- 一封多半 150 字左右，短信居多，繁體中文為主，英文對象用英文。
+
+**你的語氣**
+- 開頭多用「Hi {名字}，」或「{名字}你好」，結尾「謝謝」「再麻煩你了」；簽名「Ben / 人才發展」。
+
+這些會用在：幫你擬回信時照你的開頭、結尾和長度；判斷待回覆時把從不回的來源排除。要改哪一條，直接告訴我。
+```
+
+Rules:
+- Percentages whole numbers; hours one decimal; at most 3 names per list, then `等 N 人`.
+- Never show mail text beyond the greeting, closing and signature lines already in the file.
+- If the profile is older than 90 days (front matter `updated`), add one line offering to rebuild it.

@@ -29,9 +29,13 @@ Options: `-Horizon N` days ahead to look for the meeting (default 7); `-Days N` 
 4. Brief per reference.md: purpose and logistics, per-attendee "what is open with them", the thread about the subject, attachments worth opening beforehand, and open questions to raise. Quote decisions and dates from the mails; do not invent.
 5. Offer read-only follow-ups: open a specific thread, extract an attachment with `outlook-search` (attachments, `-SaveTo`) (ask first), or draft talking points in chat.
 
+## Delegating heavy reads
+
+When the host offers subagents (Claude Code's Agent tool, including the Code tab in Claude Desktop) and the output has many attendees or more than about 40 mails in total, hand the reading to a subagent so the raw data never enters this conversation. Give it: the path of `prep.json`, the meeting subject, matching memory notes for the attendees, and the briefing template in reference.md §2. Ask it to return the filled briefing, with dates and senders on every claim and nothing else, no raw records. Anything that needs the user's consent (writing memory, sending candidates to the reranker, copying attachments out) stays in this conversation; a subagent never asks the user and never writes. Without subagents, do the same work here but read only what the step needs.
+
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). `first_run: true` means `~/.outlook-skills` does not exist yet: hand over to `outlook-memory`'s onboarding first (respect a "not now"). Apply `store` (pass it as `-Store`), `language`, and any search defaults. When the request names a person, folder or project, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the note so aliases resolve. Never write memory silently.
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). `first_run: true` means `~/.outlook-skills` does not exist yet: hand over to `outlook-setup` first (respect a "not now"). Apply `store` (pass it as `-Store`), `language`, and any search defaults. When the request names a person, folder or project, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the note so aliases resolve. Never write memory silently.
 
 ## Output format
 

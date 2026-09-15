@@ -27,7 +27,7 @@ Selectors (use one):
 Options:
 - `-Folder`, `-Store`: where to look for the anchor when using `-Subject`.
 - `-MaxBodyChars 20000`: per-message body cap.
-- `-OutFile thread.json`: write to a file (recommended for long threads, then read the file).
+- `-OutFile thread.json`: write to a file (recommended for long threads, then read the file, or delegate the reading; see "Delegating heavy reads").
 
 The script first uses Outlook's conversation index; for POP/PST stores without conversation support it falls back to matching `ConversationTopic` across all mail folders (`Method` field tells you which).
 
@@ -43,11 +43,15 @@ The script first uses Outlook's conversation index; for POP/PST stores without c
    - participants (`Participants` field).
 4. Cite messages by date and sender, not by index.
 
+## Delegating heavy reads
+
+When the host offers subagents (Claude Code's Agent tool, including the Code tab in Claude Desktop) and the thread has more than about 15 messages or the JSON exceeds ~100 KB, hand the reading to a subagent so the raw data never enters this conversation. Give it: the path of `thread.json`, the user's actual question (or "full summary"), matching memory notes for the participants, and the template in reference.md §2 with its rules about quoted history and attribution. Ask it to return the filled template (summary, decisions, action items table, open questions, timeline, participants), every claim attributed to sender and date and nothing else, no raw records. Anything that needs the user's consent (writing memory, sending candidates to the reranker, copying attachments out) stays in this conversation; a subagent never asks the user and never writes. Without subagents, do the same work here but read only what the step needs.
+
 ## Settings and memory
 
 Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
 
-- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-memory`'s onboarding, which asks the user (structured question tool) whether to create a personal memory and scan the mailbox. Respect a "not now" and continue here.
+- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-setup` (settings wizard, mailbox scan, reply-habit profile), which asks the user first. Respect a "not now" and continue here.
 - Apply the merged `settings` (`search.default_folder`, `store`, `language`).
 - `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
 - If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.

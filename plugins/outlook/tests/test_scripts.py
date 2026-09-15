@@ -114,3 +114,17 @@ with mock.patch.object(outlook_meeting_prep.dt, "datetime", _Now):
     assert "id6" in [m["EntryID"] for m in pc["Mails"]] and "s2" in [m["EntryID"] for m in pc["Mails"]], pc
     assert any(a["FileName"] == "人才名單.xlsx" for a in mp["Attachments"])
 print("new-skill tests passed")
+
+# ================= style profile
+import outlook_style
+with mock.patch.object(outlook_style.dt, "datetime", _Now):
+    st = outlook_style.run(outlook_style.parser().parse_args(["-Store", "20230731", "-Days", "365"]))
+    assert st["Window"]["SentAnalysed"] == 3 and st["Window"]["ReceivedAnalysed"] >= 5, st["Window"]
+    by = {e["Address"]: e for e in st["ReplyRate"]["BySender"]}
+    assert by["cassie.tsai@contoso.com"]["Replied"] == 1 and by["cassie.tsai@contoso.com"]["Rate"] == 1.0, by
+    assert by["pc.liao@contoso.com"]["Replied"] == 0 and "news@example.com" not in by
+    assert st["ReplyRate"]["Newsletters"] == ["news@example.com"]
+    assert st["ReplyLatencyHours"]["Samples"] >= 1 and st["Length"]["MedianChars"] > 0
+    assert st["Language"]["MostlyChinese"] is True
+    json.dumps(st, ensure_ascii=False)
+print("style tests passed")

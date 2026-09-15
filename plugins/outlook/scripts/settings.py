@@ -16,6 +16,8 @@ Usage:
     python settings.py set working_hours.end 17:30 [--local]
     python settings.py set rerank.auto_consent true
     python settings.py memory              # memory index (use memory.py for details)
+    python settings.py profile show        # reply-habit / writing-style profile (profile.md)
+    python settings.py profile write --file draft.md [--local]
     python settings.py path                # print the resolved folders
 
 Nothing here touches Outlook. The only writes are to the plugin's own folders.
@@ -138,8 +140,10 @@ def cmd_show(args):
     hint = None
     if idx["count"] > MEMORY_SOFT_LIMIT:
         hint = f"{idx['count']} memory files (soft limit {MEMORY_SOFT_LIMIT}); suggest pruning stale ones"
+    profile = next((str(d / "profile.md") for d in ([ld] if ld else []) + [user_dir()] if (d / "profile.md").is_file()), None)
     print(json.dumps({
-        "first_run": not user_dir().exists(),   # true = ~/.outlook-skills has never been created: offer onboarding
+        "first_run": not user_dir().exists(),   # true = ~/.outlook-skills has never been created: run outlook-setup
+        "profile": profile,                     # writing / reply-habit profile (outlook-setup stage 4), or null
         "settings": merged,
         "sources": sources,           # key -> file that set it (keys absent here are defaults)
         "layers": layers,             # files actually read, in precedence order (later wins)
@@ -218,6 +222,18 @@ def cmd_memory(args):
     print(json.dumps(pm.index_summary(), ensure_ascii=False, indent=2))
 
 
+def cmd_profile(args):
+    """profile show | profile write --file <md>  : the reply-habit and writing-style profile (profile.md)."""
+    target = ((local_dir() or (Path.cwd() / DIRNAME)) if args.local else user_dir()) / "profile.md"
+    if args.action == "show":
+        print(target.read_text(encoding="utf-8") if target.is_file() else "(no profile.md; run outlook-setup)")
+        return
+    src = Path(args.file).read_text(encoding="utf-8")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(src, encoding="utf-8")
+    print(json.dumps({"written": str(target), "bytes": len(src.encode("utf-8"))}, ensure_ascii=False))
+
+
 def cmd_path(args):
     _, _, _, _, ld = resolve()
     print(json.dumps({"user_dir": str(user_dir()), "local_dir": str(ld) if ld else None}, ensure_ascii=False))
@@ -230,6 +246,7 @@ def main(argv=None):
     p = sub.add_parser("init"); p.add_argument("--local", action="store_true"); p.set_defaults(fn=cmd_init)
     p = sub.add_parser("set"); p.add_argument("key"); p.add_argument("value"); p.add_argument("--local", action="store_true"); p.set_defaults(fn=cmd_set)
     sub.add_parser("memory").set_defaults(fn=cmd_memory)
+    p = sub.add_parser("profile"); p.add_argument("action", choices=["show", "write"]); p.add_argument("--file"); p.add_argument("--local", action="store_true"); p.set_defaults(fn=cmd_profile)
     sub.add_parser("path").set_defaults(fn=cmd_path)
     args = ap.parse_args(argv)
     args.fn(args)
