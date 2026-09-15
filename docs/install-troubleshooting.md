@@ -50,6 +50,16 @@ python C:\tools\outlook-skills\install.py --claude
 - 出現「pywin32 is not installed」就裝它；出現「Cannot start Outlook COM automation」表示不是 Classic Outlook，或 AppLocker / WDAC 擋了 COM，這時只有 `outlook-open-msg` 和 `outlook_status.py -SkipCom` 能用。
 - Claude Code 的 PowerShell 工具被封鎖時無所謂，用 Bash 工具跑 `python ...` 即可。
 
+## pywin32 與 64 位元
+
+`pip install pywin32` 會依 Python 的位元數自動挑 wheel（64 位元 Python 抓 `win_amd64`，32 位元抓 `win32`，ARM 機器抓 `win_arm64`），Windows 本身是幾位元、Outlook 是幾位元都不影響，COM 是跨 process 的。pip 被擋時手動下載 wheel，先確認 Python 版本與位元：
+
+```
+python -c "import sys, struct; print(sys.version_info[:2], struct.calcsize('P')*8, 'bit')"
+```
+
+例如 `(3, 11) 64 bit` 就到 PyPI 抓檔名含 `cp311` 與 `win_amd64` 的 wheel，`pip install <檔案>.whl` 不需要網路。
+
 ## 郵件在 .pst 而不在 Exchange 信箱
 
 `outlook-status` 會看到 Exchange 收件匣幾乎是空的、某個 PST store 有大量郵件。設成預設 store，之後搜尋、摘要、掃描都會用它：
