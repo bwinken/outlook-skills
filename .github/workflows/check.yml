@@ -1,36 +1,30 @@
 name: check
 on: [push, pull_request]
 jobs:
-  syntax:
-    runs-on: windows-latest
+  test:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-      - name: Parse PowerShell scripts
-        shell: pwsh
-        run: |
-          $bad = 0
-          foreach ($f in Get-ChildItem plugins/outlook/scripts/*.ps1) {
-            $tokens = $null; $errors = $null
-            [void][System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errors)
-            if ($errors.Count -eq 0) { "OK    $($f.Name)" } else { $bad++; "ERROR $($f.Name)"; $errors | ForEach-Object { "      line $($_.Extent.StartLineNumber): $($_.Message)" } }
-          }
-          if ($bad) { exit 1 }
-      - name: Every .ps1 has a UTF-8 BOM (Windows PowerShell 5.1)
-        shell: pwsh
-        run: |
-          $bad = Get-ChildItem plugins/outlook/scripts/*.ps1 | Where-Object { $b = [IO.File]::ReadAllBytes($_.FullName); -not ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) }
-          if ($bad) { $bad | ForEach-Object { "missing BOM: $($_.Name)" }; exit 1 } else { "BOM OK" }
-      - name: Compile Python scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile
         run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
+      - name: Script tests against the fake Outlook object model
+        run: python plugins/outlook/tests/test_scripts.py
       - name: Build Claude Desktop zips
         run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names
-        shell: pwsh
+        shell: python
         run: |
-          Get-Content .claude-plugin/marketplace.json | ConvertFrom-Json | Out-Null
-          Get-Content plugins/outlook/.claude-plugin/plugin.json | ConvertFrom-Json | Out-Null
-          foreach ($d in Get-ChildItem plugins/outlook/skills -Directory) {
-            $name = (Select-String -Path "$($d.FullName)/SKILL.md" -Pattern '^name: (\S+)' | Select-Object -First 1).Matches[0].Groups[1].Value
-            if ($name -ne $d.Name) { throw "SKILL.md name '$name' does not match directory '$($d.Name)'" }
-          }
-          "manifests and skill names OK"
+          import json, re, pathlib
+          json.load(open(".claude-plugin/marketplace.json", encoding="utf-8"))
+          json.load(open("plugins/outlook/.claude-plugin/plugin.json", encoding="utf-8"))
+          for d in pathlib.Path("plugins/outlook/skills").iterdir():
+              if d.is_dir():
+                  name = re.search(r"^name: (\S+)", (d / "SKILL.md").read_text(encoding="utf-8"), re.M).group(1)
+                  assert name == d.name, f"{name} != {d.name}"
+          print("manifests and skill names OK")

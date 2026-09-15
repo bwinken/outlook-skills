@@ -6,8 +6,8 @@
 
 | Host | 安裝 | 更新 |
 |---|---|---|
-| Claude Code | `/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
-| Zoo Code | `git clone https://github.com/bwinken/outlook-skills`<br>`python outlook-skills/install.py` | `git -C outlook-skills pull`<br>`python outlook-skills/install.py` |
+| Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
+| Zoo Code | `pip install pywin32`<br>`git clone https://github.com/bwinken/outlook-skills`<br>`python outlook-skills/install.py` | `git -C outlook-skills pull`<br>`python outlook-skills/install.py` |
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
 
@@ -28,7 +28,7 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | `outlook-settings` | 設定工作時間、目前用什麼設定、reranker gateway |
 | `outlook-memory` | 第一次使用時建立個人化記憶、記住 Alice 是誰、忘掉、你記得什麼 |
 
-All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements, the full read-only policy, and how the skills cope with a locked-down PowerShell execution policy.
+All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements and the full read-only policy.
 
 ## 設定
 

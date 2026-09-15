@@ -44,12 +44,11 @@ python C:\tools\outlook-skills\install.py --claude
 
 更新：重新下載或 `git pull`，再重跑同一個指令。
 
-## PowerShell 相關
+## 執行環境
 
-- skill 一律透過 `scripts/run.py` 執行 .ps1，不需要也不應該改 execution policy；被 GPO 擋時它會自動改用 script block 方式。
-- Claude Code 的 PowerShell 工具被公司政策封鎖時，用 Bash 工具跑 `python .../run.py ...` 即可，效果相同。
-- 0.1.2 起 .ps1 都帶 UTF-8 BOM。舊版在 Windows PowerShell 5.1 會把中文當 ANSI 讀，出現「Array index expression is missing」這類假的 parse error；更新 plugin 即可。
-- AppLocker / WDAC 的 Constrained Language Mode 會擋 COM，只有 `outlook-open-msg` 和 `outlook-status -SkipCom` 能用。
+- 腳本全是 Python，只需要 `pip install pywin32`（COM 用）。沒有 PowerShell、execution policy、編碼的問題。
+- 出現「pywin32 is not installed」就裝它；出現「Cannot start Outlook COM automation」表示不是 Classic Outlook，或 AppLocker / WDAC 擋了 COM，這時只有 `outlook-open-msg` 和 `outlook_status.py -SkipCom` 能用。
+- Claude Code 的 PowerShell 工具被封鎖時無所謂，用 Bash 工具跑 `python ...` 即可。
 
 ## 郵件在 .pst 而不在 Exchange 信箱
 

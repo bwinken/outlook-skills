@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Read-only skills for working with a local Windows Outlook (Classic) mailbox: status, search, threads, calendar, and .msg/.eml files.",
-    "version": "0.1.2"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "outlook",
       "source": "./plugins/outlook",
       "description": "Read-only Outlook skills: outlook-status, outlook-search, outlook-thread, outlook-agenda, outlook-availability, outlook-open-msg, plus outlook-settings and outlook-memory (local settings and personal memory with first-run onboarding). Never modifies mailbox data.",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "author": {
         "name": "bwinken"
       },
