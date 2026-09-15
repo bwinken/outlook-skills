@@ -36,6 +36,21 @@ claude
 
 cmd 的寫法是 `set HTTP_PROXY=` 和 `set HTTPS_PROXY=`。若是 git 自己設了 proxy，用 `git config --global --unset http.proxy` 與 `--unset https.proxy`。
 
+**手動安裝**（Claude Code 連不到 GitHub 時）：先用任何方式把 repo 放到本機，例如 `git clone`，或在 GitHub 頁面 Code → Download ZIP 解壓縮，假設放在 `C:\tools\outlook-skills`。然後二選一：
+
+```
+/plugin marketplace add C:\tools\outlook-skills
+/plugin install outlook@outlook-skills
+```
+
+或不經 marketplace，直接複製成個人 skills（指令變成 `/outlook-status`，不帶 `outlook:` 前綴）：
+
+```
+python C:\tools\outlook-skills\install.py --claude
+```
+
+更新時重新下載或 `git pull`，再重跑同一個指令（marketplace 方式則跑上面的 update 兩行）。
+
 **Zoo Code**：
 
 ```
