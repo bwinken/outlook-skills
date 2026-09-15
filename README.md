@@ -8,9 +8,10 @@
 |---|---|---|
 | Claude Code | `/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
 | Zoo Code | `git clone https://github.com/bwinken/outlook-skills`<br>`python outlook-skills/install.py` | `git -C outlook-skills pull`<br>`python outlook-skills/install.py` |
-| Claude Desktop / claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
+| Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
+| Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
 
-Claude Desktop 的聊天 skill 與 Cowork 跑在沙箱裡，碰不到本機 Outlook，所以那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能完整使用；其他 skill 需要 Claude Code 或 Zoo Code 在同一台 Windows 上執行。
+Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁、Claude Code 或 Zoo Code 使用。
 
 裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 

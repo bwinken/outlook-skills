@@ -59,6 +59,7 @@ if ($Text) {
     $v = ConvertTo-DaslLiteral $Text
     $clauses += "(""urn:schemas:httpmail:subject"" LIKE '%$v%' OR ""urn:schemas:httpmail:textdescription"" LIKE '%$v%')"
 }
+$AnyOf = @($AnyOf | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 if ($AnyOf.Count -gt 0) {
     $ors = @()
     foreach ($term in $AnyOf) {
