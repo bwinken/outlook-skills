@@ -11,9 +11,7 @@ Usage:
     python read_msg.py message.msg --headers --max-body 5000
     python read_msg.py message.msg --extract-to ./out
 
-Dependencies:
-    .eml  -> Python standard library only
-    .msg  -> pip install extract-msg
+Dependencies: none beyond the Python standard library (.msg is read by msgfile.py next to this file).
 """
 import argparse
 import email
@@ -98,64 +96,58 @@ def parse_eml(path: str, want_headers: bool, extract_to):
 
 # ---------------------------------------------------------------- .msg
 def parse_msg(path: str, want_headers: bool, extract_to):
-    try:
-        import extract_msg  # type: ignore
-    except ImportError:
-        raise SystemExit(
-            "extract-msg is not installed. Run:  pip install extract-msg\n"
-            "(.eml files work without it.)"
-        )
+    from msgfile import MsgFile  # standard-library OLE2 + MAPI reader next to this file
 
-    msg = extract_msg.openMsg(path)
-    try:
-        attachments = []
-        for att in msg.attachments:
-            name = getattr(att, "longFilename", None) or getattr(att, "shortFilename", None) or "(unnamed)"
-            data = getattr(att, "data", None)
-            size = len(data) if isinstance(data, (bytes, bytearray)) else None
-            entry = {"name": name, "size": size, "mime": getattr(att, "mimetype", None)}
-            if extract_to and isinstance(data, (bytes, bytearray)):
-                entry["saved_to"] = _save(extract_to, name, data)
-            attachments.append(entry)
+    m = MsgFile(path)
+    attachments = []
+    for att in m.attachments:
+        entry = {"name": att.filename, "size": att.size, "mime": att.mime}
+        if att.method == 5:
+            entry["embedded_message"] = True
+        if extract_to and att.data is not None:
+            entry["saved_to"] = _save(extract_to, att.filename, att.data)
+        attachments.append(entry)
 
-        body = msg.body or ""
-        source = "text"
-        if not body and getattr(msg, "htmlBody", None):
-            raw = msg.htmlBody
-            body = _html_to_text(raw.decode("utf-8", "replace") if isinstance(raw, bytes) else raw)
-            source = "html"
+    body, source = m.body, "text"
+    if not body and m.html_body:
+        body, source = _html_to_text(m.html_body), "html"
 
-        date = getattr(msg, "date", None)
+    # Prefer the Date: transport header (what the user sees in Outlook); fall back to the MAPI submit time (UTC).
+    date_iso = None
+    hdr = email.message_from_string(m.headers, policy=policy.default) if m.headers else None
+    if hdr is not None and hdr.get("Date"):
         try:
-            date_iso = date.isoformat() if hasattr(date, "isoformat") else (str(date) if date else None)
+            date_iso = parsedate_to_datetime(hdr.get("Date")).isoformat()
         except Exception:
-            date_iso = str(date) if date else None
+            date_iso = None
+    if not date_iso and m.date:
+        date_iso = m.date.isoformat()
 
-        result = {
-            "file": os.path.abspath(path),
-            "format": "msg",
-            "subject": msg.subject or "",
-            "from": _addr_list(msg.sender),
-            "to": _addr_list(msg.to),
-            "cc": _addr_list(msg.cc),
-            "bcc": _addr_list(msg.bcc),
-            "date": date_iso,
-            "message_id": getattr(msg, "messageId", None),
-            "in_reply_to": getattr(msg, "inReplyTo", None),
-            "references": None,
-            "body": body,
-            "body_source": source if body else "none",
-            "attachments": attachments,
-        }
-        if want_headers:
-            hdr = getattr(msg, "header", None)
-            result["headers"] = [{"name": k, "value": str(v)} for k, v in hdr.items()] if hdr else []
-        return result
-    finally:
-        try:
-            msg.close()
-        except Exception:
-            pass
+    def addr_list(rtype, fallback):
+        rs = m.recipients_of(rtype)
+        if rs:
+            return [{"name": r["name"] if r["name"] != r["address"] else "", "address": r["address"]} for r in rs]
+        return _addr_list(fallback) if fallback else []
+
+    result = {
+        "file": os.path.abspath(path),
+        "format": "msg",
+        "subject": m.subject,
+        "from": [{"name": m.sender_name, "address": m.sender_email}] if (m.sender_name or m.sender_email) else [],
+        "to": addr_list("to", m.to),
+        "cc": addr_list("cc", m.cc),
+        "bcc": addr_list("bcc", m.bcc),
+        "date": date_iso,
+        "message_id": m.message_id or (hdr.get("Message-ID") if hdr is not None else None),
+        "in_reply_to": m.in_reply_to or (hdr.get("In-Reply-To") if hdr is not None else None),
+        "references": m.references or (hdr.get("References") if hdr is not None else None),
+        "body": body,
+        "body_source": source if body else "none",
+        "attachments": attachments,
+    }
+    if want_headers:
+        result["headers"] = [{"name": k, "value": str(v)} for k, v in hdr.items()] if hdr is not None else []
+    return result
 
 
 # ---------------------------------------------------------------- helpers

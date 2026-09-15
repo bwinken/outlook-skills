@@ -9,7 +9,7 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
-| `outlook-open-msg` | Parse a .msg / .eml file without Outlook |
+| `outlook-open-msg` | Parse a .msg / .eml file without Outlook (standard library only) |
 | `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
 | `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
 
@@ -22,7 +22,6 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 
 - Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook_status.py -SkipCom` still works there.
 - Python 3.8+ and one package: `pip install pywin32` (COM access). Everything else is the standard library.
-- Optional: `pip install extract-msg` for `.msg` files in `outlook-open-msg` (`.eml` needs nothing).
 - Outlook may be open or closed. If closed, the COM call starts it in the background under the current user's profile.
 
 ## Read-only policy
@@ -157,7 +156,8 @@ plugins/outlook/
     outlook_thread.py
     outlook_calendar.py       used by outlook-agenda and outlook-availability
     outlook_overview.py       read-only mailbox overview for memory onboarding
-    read_msg.py
+    read_msg.py               .msg / .eml parser CLI
+    msgfile.py                standard-library OLE2 + MAPI reader for .msg
     rerank.py                 optional reranker client for fuzzy search (asks consent first)
     settings.py               merges ~/.outlook-skills and ./.outlook-skills settings; init / set / show
     memory.py                 memory notes: list / find / new / append / touch / remove

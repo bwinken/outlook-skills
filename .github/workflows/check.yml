@@ -15,6 +15,8 @@ jobs:
         run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
       - name: Script tests against the fake Outlook object model
         run: python plugins/outlook/tests/test_scripts.py
+      - name: .msg parser against real samples
+        run: python plugins/outlook/tests/test_msgfile.py
       - name: Build Claude Desktop zips
         run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names
