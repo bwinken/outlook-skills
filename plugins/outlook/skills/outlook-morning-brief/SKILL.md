@@ -46,7 +46,7 @@ A mail counts as answered when a later mail in the same conversation comes from 
 
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). `first_run: true` means `~/.outlook-skills` does not exist yet: hand over to `outlook-memory`'s onboarding first (respect a "not now"). Apply `store` (pass it as `-Store`), `working_hours`, `language`. When a sender, attendee or project is named in memory, use the note's role and keywords. Never write memory silently.
+Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). `first_run: true` means `~/.outlook-skills` does not exist yet: hand over to `outlook-setup` first (respect a "not now"). Apply `store` (pass it as `-Store`), `working_hours`, `language`. When a sender, attendee or project is named in memory, use the note's role and keywords. Never write memory silently. If `profile` is set, read it (`settings.py profile show`) before drafting a reply in the user's voice or judging which mails need a reply.
 
 ## Output format
 

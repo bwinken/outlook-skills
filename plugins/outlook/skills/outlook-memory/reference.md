@@ -43,7 +43,7 @@ Newsletters (`Newsletters` list, senders with a List-Unsubscribe header) are not
 
 ## 4. Presenting
 
-Onboarding draft (before writing anything):
+Onboarding draft table (used by outlook-setup stage 3):
 
 ```
 從最近 180 天的 1,842 封郵件與行事曆整理出以下記憶草稿（只存摘要，不存內文）：
