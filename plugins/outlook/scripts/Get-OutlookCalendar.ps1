@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     READ-ONLY. Lists calendar items in a date range (recurrences expanded) and flags overlaps.
 

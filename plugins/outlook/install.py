@@ -13,6 +13,7 @@ Usage:
     python install.py --agents           # ~/.agents/skills/<name>/        (Agent Skills standard path)
     python install.py --project          # use ./ instead of ~ for any of the above
     python install.py --dest <dir>       # any directory
+    python install.py --zip [outdir]     # build dist/<skill>.zip files for Claude Desktop / claude.ai (scripts bundled inside)
     python install.py --uninstall        # remove what a previous run created
     python install.py --dry-run
 
@@ -21,6 +22,7 @@ Re-run after pulling updates; existing copies are replaced.
 import argparse
 import shutil
 import sys
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -64,6 +66,39 @@ def install(dest: Path, dry: bool):
     return done
 
 
+def build_zips(outdir: Path):
+    """One zip per skill with the skill folder as the zip root, the shared scripts copied into
+    <skill>/scripts/, the plugin README as <skill>/README.md, and paths rewritten to be relative.
+    This is the layout Claude Desktop / claude.ai expect for an uploaded custom skill."""
+    outdir.mkdir(parents=True, exist_ok=True)
+    scripts = HERE / "scripts"
+    readme = HERE / "README.md"
+    built = []
+    for skill in sorted(p for p in SKILLS.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()):
+        zpath = outdir / f"{skill.name}.zip"
+        with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in sorted(skill.iterdir()):
+                if not f.is_file():
+                    continue
+                data = f.read_bytes()
+                if f.suffix.lower() == ".md":
+                    text = data.decode("utf-8")
+                    text = text.replace(f"{VAR}/skills/{skill.name}/", "")
+                    text = text.replace(f"{VAR}/skills/", "../")
+                    text = text.replace(f"{VAR}/scripts/", "scripts/")
+                    text = text.replace(f"{VAR}/README.md", "README.md")
+                    text = text.replace(VAR, ".")
+                    data = text.encode("utf-8")
+                z.writestr(f"{skill.name}/{f.name}", data)
+            for sf in sorted(scripts.iterdir()):
+                if sf.is_file() and sf.suffix.lower() in (".ps1", ".py"):
+                    z.write(sf, f"{skill.name}/scripts/{sf.name}")
+            if readme.is_file():
+                z.write(readme, f"{skill.name}/README.md")
+        built.append(str(zpath))
+    return built
+
+
 def uninstall(dest: Path, dry: bool):
     done = []
     for skill in sorted(p for p in SKILLS.iterdir() if p.is_dir()):
@@ -81,9 +116,15 @@ def main(argv=None):
     ap.add_argument("--claude", action="store_true", help="Claude Code personal skills: .claude/skills/ (no marketplace)")
     ap.add_argument("--agents", action="store_true", help="use .agents/skills/ instead of .roo/skills/")
     ap.add_argument("--dest", help="explicit skills directory")
+    ap.add_argument("--zip", nargs="?", const="dist", metavar="OUTDIR", help="build per-skill zips for Claude Desktop into OUTDIR (default dist/)")
     ap.add_argument("--uninstall", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv)
+    if args.zip:
+        built = build_zips(Path(args.zip).expanduser().resolve())
+        print("Built:\n" + "\n".join(built))
+        print("\nUpload each zip in Claude Desktop: Customize > Skills > +. Skills that use Outlook COM only work where the host runs on the Windows machine itself (Claude Code, Zoo Code); outlook-open-msg works everywhere with an attached .msg/.eml.")
+        return
     dest = dest_dir(args)
     if args.uninstall:
         removed = uninstall(dest, args.dry_run)

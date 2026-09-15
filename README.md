@@ -4,68 +4,16 @@
 
 ## Install
 
-**Claude Code**（plugin marketplace）：
+| Host | 安裝 | 更新 |
+|---|---|---|
+| Claude Code | `/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
+| Zoo Code | `git clone https://github.com/bwinken/outlook-skills`<br>`python outlook-skills/install.py` | `git -C outlook-skills pull`<br>`python outlook-skills/install.py` |
+| Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
+| Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
 
-```
-/plugin marketplace add bwinken/outlook-skills
-/plugin install outlook@outlook-skills
-```
+Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁、Claude Code 或 Zoo Code 使用。
 
-若 add 時出現「its network source differs from the one declared for it in settings」，先 `/plugin marketplace remove outlook-skills` 再重新 add。
-
-更新：
-
-```
-/plugin marketplace update outlook-skills
-/plugin update outlook@outlook-skills
-```
-
-若環境變數設了 `HTTP_PROXY` / `HTTPS_PROXY` 而 add 連不到 GitHub，先讓 GitHub 走直連，再在同一個視窗啟動 Claude Code：
-
-```powershell
-$env:NO_PROXY = "github.com,api.github.com,objects.githubusercontent.com"
-claude
-```
-
-還是不行就只對這個視窗清掉 proxy（不影響其他程式）：
-
-```powershell
-Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY -ErrorAction SilentlyContinue
-claude
-```
-
-cmd 的寫法是 `set HTTP_PROXY=` 和 `set HTTPS_PROXY=`。若是 git 自己設了 proxy，用 `git config --global --unset http.proxy` 與 `--unset https.proxy`。
-
-**手動安裝**（Claude Code 連不到 GitHub 時）：先用任何方式把 repo 放到本機，例如 `git clone`，或在 GitHub 頁面 Code → Download ZIP 解壓縮，假設放在 `C:\tools\outlook-skills`。然後二選一：
-
-```
-/plugin marketplace add C:\tools\outlook-skills
-/plugin install outlook@outlook-skills
-```
-
-或不經 marketplace，直接複製成個人 skills（指令變成 `/outlook-status`，不帶 `outlook:` 前綴）：
-
-```
-python C:\tools\outlook-skills\install.py --claude
-```
-
-更新時重新下載或 `git pull`，再重跑同一個指令（marketplace 方式則跑上面的 update 兩行）。
-
-**Zoo Code**：
-
-```
-git clone https://github.com/bwinken/outlook-skills
-python outlook-skills/install.py
-```
-
-裝到 `~/.roo/skills/`，所有專案可用。clone 的資料夾不要移動。
-
-更新：
-
-```
-git -C outlook-skills pull
-python outlook-skills/install.py
-```
+裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 
 ## Skills
 

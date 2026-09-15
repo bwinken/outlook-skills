@@ -7,6 +7,10 @@ description: Open and read a saved Outlook message file (.msg) or standard .eml 
 
 Read-only parser for single-message files. The input file is never modified and Outlook is not involved.
 
+## Where this runs
+
+Anywhere Python runs, including Claude Desktop and claude.ai skills (the user attaches the .msg/.eml file) and Cowork. No Outlook needed.
+
 ## Run
 
 ```

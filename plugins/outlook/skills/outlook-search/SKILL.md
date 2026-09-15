@@ -7,19 +7,17 @@ description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sen
 
 Read-only mail search through Outlook COM automation. Results are returned as JSON; nothing is marked read, moved or changed.
 
+## Where this runs
+
+Needs Windows with Classic Outlook and a host that executes commands on that same machine (Claude Code, Zoo Code, or Claude Code inside Claude Desktop). In a Claude Desktop chat skill or Cowork the sandbox cannot reach Outlook: say so in one line, and point the user to Claude Code, or to `outlook-open-msg` for .msg/.eml files they export from Outlook.
+
 ## Run
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Search-OutlookMail.ps1" [options]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Search-OutlookMail.ps1 [options]
 ```
 
-If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
-
-```
-powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Search-OutlookMail.ps1'))) [options]"
-```
-
-Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
 
 Options (all optional, combine freely):
 
@@ -35,14 +33,15 @@ Options (all optional, combine freely):
 | `-HasAttachments` | only mails with attachments |
 | `-Unread` | only unread mails |
 | `-Folder "Inbox/Projects"` | folder path; default Inbox. Also `"Sent Items"`, `"Deleted Items"`, `"Junk Email"`, or `"\\Store Name\Inbox\Sub"` |
-| `-Store "Mailbox - Name"` | pick a specific store (shared mailbox, archive .pst) |
+| `-Store "Mailbox - Name"` | pick a specific store (shared mailbox, archive .pst); use the `store` setting as the default when set |
+| `-AllStores` | search every store (Exchange mailbox and every attached .pst) instead of one |
 | `-AllFolders` | recurse every mail folder under `-Folder` |
 | `-Max 50` | result cap, newest first |
 | `-IncludeBody` | include full plain-text body (slower, larger) |
 | `-PreviewLength 500` | length of `BodyPreview` (default 200); use ~500 for reranking |
-| `-OutFile hits.json` | write JSON to file |
+| `--out hits.json` | keep the JSON in a file instead of printing it |
 
-Text matching is case-insensitive substring. Quote values containing spaces.
+Text matching is case-insensitive substring. Folder names may be given in English (`Inbox`, `Sent Items`) or as shown in a localized Outlook (`收件匣`, `寄件備份`); both resolve inside any store. When the user's mail lives mostly in a .pst (outlook-status shows the Exchange Inbox nearly empty and a big PST store), pass `-Store "<pst name>"` or `-AllStores`, and suggest saving `store` in settings so it becomes the default.
 
 ## Workflow
 
@@ -55,7 +54,7 @@ Text matching is case-insensitive substring. Quote values containing spaces.
 
 Substring matching misses typos, synonyms and mixed Chinese/English wording. Escalate in this order and stop as soon as the user has what they need. **Always narrow first; the reranker is only for when the narrowed set is still too big to read.**
 
-1. **Narrow with what is certain.** Turn every hard fact in the request into filters before any fuzzy step: sender or recipient, date range (default the last 90 days when the user says "recently" or gives no hint), folder, attachments. Run that search with `-Max 300 -PreviewLength 500 -OutFile "<tmp>/candidates.json"`.
+1. **Narrow with what is certain.** Turn every hard fact in the request into filters before any fuzzy step: sender or recipient, date range (default the last 90 days when the user says "recently" or gives no hint), folder, attachments. Run that search with `-Max 300 -PreviewLength 500 --out "<tmp>/candidates.json"`.
 2. **Keyword expansion** when the topic is fuzzy (no network, no consent needed): rewrite the topic into several likely terms in both languages and add `-AnyOf`. Example: "上次跟供應商談價格的信" -> `-AnyOf "價格","報價","quote","quotation","pricing"`.
 3. **Decide by count** (`Count` in the JSON). The reranker is never the default; it is one branch of this ladder:
 

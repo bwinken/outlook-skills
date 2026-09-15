@@ -1,7 +1,7 @@
 {
   "name": "outlook",
   "description": "Read-only skills for a local Windows Outlook (Classic) mailbox. Reads mail, threads, calendar and .msg/.eml files; never writes, sends, moves or deletes anything.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "bwinken"
   },

@@ -15,8 +15,15 @@ jobs:
             if ($errors.Count -eq 0) { "OK    $($f.Name)" } else { $bad++; "ERROR $($f.Name)"; $errors | ForEach-Object { "      line $($_.Extent.StartLineNumber): $($_.Message)" } }
           }
           if ($bad) { exit 1 }
+      - name: Every .ps1 has a UTF-8 BOM (Windows PowerShell 5.1)
+        shell: pwsh
+        run: |
+          $bad = Get-ChildItem plugins/outlook/scripts/*.ps1 | Where-Object { $b = [IO.File]::ReadAllBytes($_.FullName); -not ($b.Length -ge 3 -and $b[0] -eq 0xEF -and $b[1] -eq 0xBB -and $b[2] -eq 0xBF) }
+          if ($bad) { $bad | ForEach-Object { "missing BOM: $($_.Name)" }; exit 1 } else { "BOM OK" }
       - name: Compile Python scripts
         run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
+      - name: Build Claude Desktop zips
+        run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names
         shell: pwsh
         run: |

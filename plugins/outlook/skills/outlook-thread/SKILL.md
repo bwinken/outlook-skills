@@ -7,19 +7,17 @@ description: Read and summarise a whole email conversation (thread) from the loc
 
 Read-only conversation reader. Nothing in Outlook is modified.
 
+## Where this runs
+
+Needs Windows with Classic Outlook and a host that executes commands on that same machine (Claude Code, Zoo Code, or Claude Code inside Claude Desktop). In a Claude Desktop chat skill or Cowork the sandbox cannot reach Outlook: say so in one line, and point the user to Claude Code, or to `outlook-open-msg` for .msg/.eml files they export from Outlook.
+
 ## Run
 
 ```
-powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookThread.ps1" [selector] [options]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookThread.ps1 [selector] [options]
 ```
 
-If that fails with "running scripts is disabled on this system" (execution policy enforced by Group Policy, so `-ExecutionPolicy Bypass` is ignored), use the policy-free form, which loads the script text as a script block instead of running the file:
-
-```
-powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='${CLAUDE_PLUGIN_ROOT}/scripts'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookThread.ps1'))) [selector]  [options]"
-```
-
-Use Windows paths with backslashes inside the single quotes if forward slashes are rejected. Do not try to change the machine's execution policy; that is the user's or IT's decision. See the plugin README section "Execution policy" for the AppLocker / Constrained Language case.
+Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
 
 Selectors (use one):
 - `-EntryID <id>`: precise, from `outlook-search` output.
@@ -29,7 +27,7 @@ Selectors (use one):
 Options:
 - `-Folder`, `-Store`: where to look for the anchor when using `-Subject`.
 - `-MaxBodyChars 20000`: per-message body cap.
-- `-OutFile thread.json`: write to file (recommended for long threads, then read the file).
+- `--out thread.json`: keep the JSON in a file (recommended for long threads, then read the file).
 
 The script first uses Outlook's conversation index; for POP/PST stores without conversation support it falls back to matching `ConversationTopic` across all mail folders (`Method` field tells you which).
 
