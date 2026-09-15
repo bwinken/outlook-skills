@@ -23,6 +23,10 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | `outlook-thread` | 幫我摘要「Q3 預算」這串討論、結論和待辦是什麼 |
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
+| `outlook-followup` | 誰還沒回我、我還欠誰回信 |
+| `outlook-digest` | 今天有什麼信、未讀摘要、有沒有急事 |
+| `outlook-meeting-prep` | 幫我準備下一場會議、跟他們最近的往來和附件 |
+| `outlook-attachments` | 找 Alice 寄的合約 PDF、最大的附件、把附件存出來 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
 | `outlook-settings` | 設定工作時間、目前用什麼設定、reranker gateway |
 | `outlook-memory` | 第一次使用時建立個人化記憶、記住 Alice 是誰、忘掉、你記得什麼 |
@@ -74,6 +78,9 @@ updated: 2026-09-14T13:40:05
 - 平常說「記住 …」「忘掉 …」「你記得什麼」即可；相關的事會加進同一個檔案。
 - 不存郵件內文、附件、金鑰；沒同意的不寫。記憶檔含人名與 email，工作目錄是 git repo 時把 `.outlook-skills/` 加進 `.gitignore`。
 
-## Roadmap ideas
+## Roadmap
 
-Not implemented yet, kept here as candidates: follow-up tracker (sent mails with no reply), inbox digest, meeting prep, attachment finder, mail-header phishing triage, rules audit (detect suspicious auto-forward rules), contacts lookup, .pst archive explorer.
+- 規則稽核：列出 Outlook rules，標出自動轉寄到外部、自動刪除等可疑設定
+- 聯絡人查詢
+- 收件匣裡的信直接做標頭釣魚分析（目前只有 .msg / .eml 檔）
+- 不開 Outlook 直接讀 .pst

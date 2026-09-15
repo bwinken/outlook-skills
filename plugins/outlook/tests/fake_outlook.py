@@ -3,8 +3,17 @@ import datetime as dt
 
 
 class Attachment:
-    def __init__(self, name, size=100, atype=1):
-        self.FileName, self.Size, self.Type = name, size, atype
+    def __init__(self, name, size=100, atype=1, data=b"data"):
+        self.FileName, self.Size, self.Type, self._data = name, size, atype, data
+
+    def SaveAsFile(self, path):
+        with open(path, "wb") as fh:
+            fh.write(self._data)
+
+
+class Attachments(list):
+    def Item(self, i):
+        return self[i - 1]
 
 
 class PropertyAccessor:
@@ -33,7 +42,7 @@ class Mail:
         self.ReceivedTime = received
         self.SentOn = received
         self.Body, self.To, self.CC, self.UnRead = body, to, cc, unread
-        self.Attachments = list(attachments)
+        self.Attachments = Attachments(attachments)
         self.Size, self.Importance, self.FlagStatus, self.Categories = 1024, importance, 0, ""
         self.ConversationTopic = conv_topic if conv_topic is not None else subject.replace("Re: ", "").replace("RE: ", "")
         self.ConversationID = conv_id
@@ -59,6 +68,7 @@ class Appointment:
         self.RequiredAttendees, self.OptionalAttendees = "", ""
         self.BusyStatus, self.MeetingStatus, self.ResponseStatus, self.IsRecurring = busy, meeting, response, recurring
         self.Categories, self.Body = "", ""
+        self.Recipients = []
 
 
 class Items:
@@ -132,6 +142,8 @@ def _field(it, field):
         "urn:schemas:httpmail:subject": it.Subject, "urn:schemas:httpmail:textdescription": it.Body,
         "urn:schemas:httpmail:hasattachment": 1 if it.Attachments else 0, "urn:schemas:httpmail:read": 0 if it.UnRead else 1,
         "urn:schemas:httpmail:thread-topic": it.ConversationTopic,
+        "urn:schemas:httpmail:importance": it.Importance,
+        "http://schemas.microsoft.com/mapi/proptag/0x10900003": it.FlagStatus,
     }[field]
 
 
@@ -203,7 +215,7 @@ class Namespace:
     def __init__(self, stores, default_store):
         self.Stores = stores
         self._default = default_store
-        self.Accounts = []
+        self.Accounts = [type("Acc", (), {"SmtpAddress": "me@contoso.com", "DisplayName": "me", "UserName": "me", "AccountType": 0})()]
         self._by_id = {}
         for s in stores:
             for f in _walk(s.GetRootFolder()):
@@ -226,14 +238,21 @@ def build_fixture():
     m2 = Mail("id2", "合約草稿 v3 - 法務意見", "Ben", "ben@contoso.com", d(2026, 9, 11, 9, 0), body="請法務看一下", conv_id="C1")
     m3 = Mail("id3", "Q3 預算討論", "David WY Chen", "david.chen@contoso.com", d(2026, 9, 8, 9, 12), body="三個方案 A B C 報價", conv_id="C2")
     m4 = Mail("id4", "Weekly newsletter", "News", "news@example.com", d(2026, 9, 1, 8, 0), body="quote of the week", unsubscribe=True)
+    m6 = Mail("id6", "AI 人才發展：可以幫我看一下名單嗎？", "PC Liao", "pc.liao@contoso.com", d(2026, 9, 10, 11, 0), body="Ben，麻煩看一下附件名單，週五前回我好嗎？", conv_id="C6", recipients=[Recipient("Ben", "me@contoso.com")], attachments=[Attachment("人才名單.xlsx", 51200, data=b"xlsx")])
+    m7 = Mail("id7", "FYI: 季報", "David WY Chen", "david.chen@contoso.com", d(2026, 9, 11, 9, 0), body="供參考，不用回", conv_id="C7", recipients=[Recipient("Ben", "me@contoso.com")], attachments=[Attachment("Q3_report.pptx", 4823040, data=b"pptx"), Attachment("image001.png", 9120, atype=1, data=b"png")])
     m5 = Mail("id5", "Old mail", "Cassie Tsai", "cassie.tsai@contoso.com", d(2024, 1, 5, 10, 0), body="old")
     conv = Conversation(["id1", "id2"])
     m1._conversation = conv; m2._conversation = conv
     sub = Folder("人才", "\\\\20230731\\收件匣\\人才", items=[m3])
-    inbox = Folder("收件匣", "\\\\20230731\\收件匣", items=[m1, m2, m4, m5], subfolders=[sub])
-    sent = Folder("寄件備份", "\\\\20230731\\寄件備份", items=[Mail("s1", "Re: Q3 預算討論", "Me", "me@contoso.com", d(2026, 9, 9, 10, 0), conv_id="C2", recipients=[Recipient("David WY Chen", "david.chen@contoso.com"), Recipient("PC Liao", "pc.liao@contoso.com")])])
+    inbox = Folder("收件匣", "\\\\20230731\\收件匣", items=[m1, m2, m4, m5, m6, m7], subfolders=[sub])
+    s1 = Mail("s1", "Re: Q3 預算討論", "Me", "me@contoso.com", d(2026, 9, 9, 10, 0), conv_id="C2", to="David WY Chen; PC Liao", recipients=[Recipient("David WY Chen", "david.chen@contoso.com"), Recipient("PC Liao", "pc.liao@contoso.com")])
+    s2 = Mail("s2", "報價單請確認", "Me", "me@contoso.com", d(2026, 9, 5, 10, 0), conv_id="C5", to="PC Liao", recipients=[Recipient("PC Liao", "pc.liao@contoso.com")], body="請確認報價")
+    s3 = Mail("s3", "Re: 合約草稿 v3 - 法務意見", "Me", "me@contoso.com", d(2026, 9, 12, 18, 0), conv_id="C1", to="Cassie Tsai", recipients=[Recipient("Cassie Tsai", "cassie.tsai@contoso.com")], body="收到，謝謝")
+    sent = Folder("寄件備份", "\\\\20230731\\寄件備份", items=[s1, s2, s3])
     ap1 = Appointment("a1", "每日站會", d(2026, 9, 16, 9, 30), d(2026, 9, 16, 10, 0), recurring=True, organizer="Cassie Tsai", location="Teams")
-    ap2 = Appointment("a2", "供應商簡報", d(2026, 9, 16, 14, 0), d(2026, 9, 16, 15, 0))
+    ap2 = Appointment("a2", "供應商簡報", d(2026, 9, 16, 14, 0), d(2026, 9, 16, 15, 0), organizer="Cassie Tsai")
+    ap2.Recipients = [Recipient("Cassie Tsai", "cassie.tsai@contoso.com"), Recipient("PC Liao", "pc.liao@contoso.com"), Recipient("Ben", "me@contoso.com")]
+    ap2.RequiredAttendees = "Cassie Tsai; PC Liao; Ben"
     ap3 = Appointment("a3", "1:1 with Bob", d(2026, 9, 16, 14, 30), d(2026, 9, 16, 15, 30), busy=1, response=2)
     ap4 = Appointment("a4", "Free block", d(2026, 9, 16, 11, 0), d(2026, 9, 16, 12, 0), busy=0)
     cal = Folder("行事曆", "\\\\20230731\\行事曆", items=[ap1, ap2, ap3, ap4], item_type=1)

@@ -246,6 +246,38 @@ def iter_items(items):
         item = items.GetNext()
 
 
+def my_addresses(ns=None):
+    """Lower-cased SMTP addresses that count as 'me' (all accounts + current user)."""
+    ns = ns or connect()
+    out = set()
+    try:
+        for a in ns.Accounts:
+            v = str(_safe(lambda: a.SmtpAddress, "") or "").lower()
+            if v:
+                out.add(v)
+    except Exception:
+        pass
+    for getter in (lambda: ns.CurrentUser.AddressEntry.GetExchangeUser().PrimarySmtpAddress, lambda: ns.CurrentUser.Address):
+        v = str(_safe(getter, "") or "").lower()
+        if v and "@" in v:
+            out.add(v)
+    return out
+
+
+def is_me(address: str, name: str, me: set) -> bool:
+    a = (address or "").lower()
+    return a in me
+
+
+def appointment_attendees(appt):
+    """Attendees with addresses where available: [{Name, Address, Type}] (Type 1 required, 2 optional, 3 resource)."""
+    out = recipient_list(appt, 0)
+    if out:
+        return [{"Name": r["Name"], "Address": r["Address"]} for r in out]
+    names = [n.strip() for n in (str(_safe(lambda: appt.RequiredAttendees, "") or "") + ";" + str(_safe(lambda: appt.OptionalAttendees, "") or "")).split(";") if n.strip()]
+    return [{"Name": n, "Address": ""} for n in names]
+
+
 # ---------------------------------------------------------------- item projections
 def sender_smtp(mail) -> str:
     try:

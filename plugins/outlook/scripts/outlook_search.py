@@ -31,6 +31,10 @@ def build_dasl(a) -> str:
         c.append('"urn:schemas:httpmail:hasattachment" = 1')
     if a.unread:
         c.append('"urn:schemas:httpmail:read" = 0')
+    if getattr(a, "highimportance", False):
+        c.append('"urn:schemas:httpmail:importance" = 2')
+    if getattr(a, "flagged", False):
+        c.append('"http://schemas.microsoft.com/mapi/proptag/0x10900003" = 2')
     return ("@SQL=" + " AND ".join(c)) if c else ""
 
 
@@ -82,7 +86,7 @@ def run(a, ns=None):
             "AnyOf": [t.strip() for chunk in (a.anyof or []) for t in chunk.split(",") if t.strip()],
             "After": after.strftime("%Y-%m-%dT%H:%M:%S") if after else None,
             "Before": before.strftime("%Y-%m-%dT%H:%M:%S") if before else None,
-            "HasAttachments": a.hasattachments, "Unread": a.unread,
+            "HasAttachments": a.hasattachments, "Unread": a.unread, "HighImportance": getattr(a, "highimportance", False), "Flagged": getattr(a, "flagged", False),
             "Folders": [str(f.FolderPath) for f in folders], "AllStores": a.allstores, "Dasl": dasl, "Max": a.max,
         },
         "Count": len(results), "Results": results,
@@ -101,6 +105,8 @@ def parser():
     ap.opt("-Before", default="", help="received before (ISO date, exclusive)")
     ap.flag("-HasAttachments")
     ap.flag("-Unread")
+    ap.flag("-HighImportance", help="only high-importance mails")
+    ap.flag("-Flagged", help="only flagged (follow-up) mails")
     ap.opt("-Folder", default="", help='"Inbox", "Sent Items", "Inbox/Projects", "收件匣", or "\\\\Store\\Inbox\\Sub"')
     ap.opt("-Store", default="", help="store display name (shared mailbox, PST)")
     ap.flag("-AllFolders", help="recurse every mail folder under -Folder")

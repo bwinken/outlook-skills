@@ -9,6 +9,10 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
+| `outlook-followup` | Mails waiting for a reply, in both directions |
+| `outlook-digest` | Inbox triage by urgency for today or this week |
+| `outlook-meeting-prep` | Attendees, recent mail with them, topic thread and attachments before a meeting |
+| `outlook-attachments` | Find, filter, sort attachments; copy out with consent |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook (standard library only) |
 | `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
 | `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
@@ -156,6 +160,9 @@ plugins/outlook/
     outlook_thread.py
     outlook_calendar.py       used by outlook-agenda and outlook-availability
     outlook_overview.py       read-only mailbox overview for memory onboarding
+    outlook_followup.py       unanswered mails, sent or received
+    outlook_attachments.py    attachment search, filter, sort, SaveAsFile copy-out
+    outlook_meeting_prep.py   meeting briefing data
     read_msg.py               .msg / .eml parser CLI
     msgfile.py                standard-library OLE2 + MAPI reader for .msg
     rerank.py                 optional reranker client for fuzzy search (asks consent first)
