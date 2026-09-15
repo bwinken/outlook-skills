@@ -11,6 +11,8 @@
 /plugin install outlook@outlook-skills
 ```
 
+若 add 時出現「its network source differs from the one declared for it in settings」，先 `/plugin marketplace remove outlook-skills` 再重新 add。
+
 **Zoo Code**：
 
 ```
