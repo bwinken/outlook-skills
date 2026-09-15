@@ -4,7 +4,7 @@ jobs:
   syntax:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Parse PowerShell scripts
         shell: pwsh
         run: |
@@ -16,7 +16,7 @@ jobs:
           }
           if ($bad) { exit 1 }
       - name: Compile Python scripts
-        run: python -m py_compile plugins/outlook/scripts/*.py plugins/outlook/install.py install.py
+        run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
       - name: Validate manifests and skill names
         shell: pwsh
         run: |
