@@ -62,7 +62,29 @@ After the dialogs: `已寫入 {N} 條到 ~/.outlook-skills/memory/（people {a}�
 
 ## 4. Stage 4 profile.md
 
-Built from `outlook_style.py`. Show it in full, then ask 「存成 profile.md」/「修改後再存」/「不要存」.
+### `outlook_style.py` output (JSON)
+
+| Field | Meaning |
+|---|---|
+| `Window` | `Since`, `Days`, `SentAnalysed`, `ReceivedAnalysed` (mails scanned) |
+| `Me` | the user's addresses (accounts + current user) |
+| `ReplyRate.OverallHuman` | replied ÷ received, newsletters excluded (0 to 1) |
+| `ReplyRate.BySender[]` | `Name`, `Address`, `Received`, `Replied`, `ToMe` (times the user was in To), `Rate`, `Newsletter` |
+| `ReplyRate.AlwaysReplied[]` | senders with ≥2 mails and rate ≥ 0.8 |
+| `ReplyRate.NeverReplied[]` | senders with ≥3 mails and 0 replies |
+| `ReplyRate.Newsletters[]` | addresses with a List-Unsubscribe header |
+| `ReplyLatencyHours` | `Median`, `P75`, `Within1h` (share), `Samples` |
+| `Length` | `MedianChars` of the user's own text (quoted history removed), `Buckets` Short<200 / Medium200-800 / Long>800 |
+| `Language` | `MedianCjkRatio`, `MostlyChinese` |
+| `Greetings[]` / `Closings[]` | recurring first / last lines (`Line`, `Count`), 40 characters max |
+| `Signature[]` | recurring trailing block (`Block` with lines joined by " / ", `Count`) |
+| `SendHours` | `Histogram` by hour, `Typical` (the 4 busiest hours) |
+
+"Replied" means a later mail from the user exists in the same conversation (Inbox + Sent Items). Replies by phone or chat are invisible; say so when a well-known contact shows up under "never replied".
+
+### Template
+
+Built from the JSON above. Show it in full, then ask 「存成 profile.md」/「修改後再存」/「不要存」.
 
 ```
 ---

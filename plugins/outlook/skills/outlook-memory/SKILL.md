@@ -1,6 +1,6 @@
 ---
 name: outlook-memory
-description: Manage the plugin's own state, READ-ONLY toward Outlook: personal memory notes (~/.outlook-skills/memory/<category>/<title>.md with YAML front matter; remember / forget / what do you know) and settings (working hours, default store and search window, reranker gateway and consent, reply language). Use when the user says "remember that Alice is ...", "forget ...", "what do you know about X", "set my working hours to ...", "what settings are you using", or 記住 / 忘掉 / 你記得什麼 / 設定工作時間 / 目前的設定. First-time setup and mailbox scans belong to outlook-setup.
+description: Manage the plugin's own state, READ-ONLY toward Outlook: personal memory notes (~/.outlook-skills/memory/<category>/<title>.md with YAML front matter; remember / forget / what do you know), settings (working hours, default store and search window, reranker gateway and consent, reply language), and the reply-habit profile (show it, explain it, tweak a line). Use when the user says "remember that Alice is ...", "forget ...", "what do you know about X", "set my working hours to ...", "what settings are you using", "what are my reply habits", "show my profile", or 記住 / 忘掉 / 你記得什麼 / 設定工作時間 / 目前的設定 / 我的回信習慣 / 看一下我的側寫. First-time setup and mailbox scans belong to outlook-setup.
 ---
 
 # outlook-memory
@@ -57,9 +57,23 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" set <key> <value> [--local]  
 - **Reranker consent**: `rerank.auto_consent true` lets outlook-search skip the per-run confirmation. Only on an explicit ask, and repeat once what will be sent and where.
 - Never store credentials in memory notes; the reranker api key belongs in settings.json or an env var.
 
+## Profile (reply habits and writing style)
+
+`profile.md` is one file next to `settings.json`, built by `outlook-setup` stage 4 from `outlook_style.py`. It is not a memory note: it is the user's overall reply behaviour and voice, and other skills read it when they judge what needs a reply or draft one.
+
+```
+python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" profile show
+python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" profile write --file <edited.md>
+```
+
+- **"我的回信習慣是什麼 / show my profile"**: run `profile show`, present per reference.md §6 (a short reading, not the raw file). No profile yet: say so and offer `outlook-setup` stage 4 (「更新回信習慣」).
+- **"Why is X under never replied?"**: explain the rule (a reply counts only when a later mail from the user exists in the same conversation; phone or chat replies are invisible) and offer to note the exception as a line in the profile.
+- **Tweak a line** ("我其實都會回 Cassie", "我的結尾改成 Best regards"): edit the corresponding bullet, keep the front matter, bump `updated`, write with `profile write`, show the diff. Only on the user's ask.
+- **Rebuild from data**: hand over to `outlook-setup` (stage 4), which shows what changed before saving.
+
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-matter schema, per-category guidance, title rules, the list layout, and the settings key table.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-matter schema, per-category guidance, title rules, the list layout, the settings key table, and how to present the profile.
 
 ## Read-only rules
 
