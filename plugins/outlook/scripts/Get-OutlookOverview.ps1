@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     READ-ONLY. Aggregated overview of the mailbox for building the plugin's memory:
     top correspondents, folder tree with counts, frequent conversation topics,
@@ -38,7 +38,19 @@ function Add-Count([hashtable]$table, [string]$key, [hashtable]$extra) {
 }
 
 # ---- folders ------------------------------------------------------------------------------
-$root = if ($Store) { (Get-OlStores | Where-Object { $_.DisplayName -eq $Store } | Select-Object -First 1).GetRootFolder() } else { $ns.GetDefaultFolder(6).Parent }
+$storeObj = $null
+if ($Store) {
+    $storeObj = Get-OlStores | Where-Object { $_.DisplayName -eq $Store } | Select-Object -First 1
+    if (-not $storeObj) { throw "Store '$Store' not found. Stores: $((Get-OlStores | ForEach-Object { $_.DisplayName }) -join ', ')" }
+}
+$root = if ($storeObj) { $storeObj.GetRootFolder() } else { $ns.GetDefaultFolder(6).Parent }
+function Get-StoreDefault([int]$id, [string[]]$names) {
+    if ($storeObj) {
+        try { return $storeObj.GetDefaultFolder($id) } catch { }
+        return ($root.Folders | Where-Object { $_.Name -in $names } | Select-Object -First 1)
+    }
+    return $ns.GetDefaultFolder($id)
+}
 $folders = @()
 foreach ($f in Get-OlMailFoldersRecursive -Folder $root) {
     $unread = $null; try { $unread = [int]$f.UnReadItemCount } catch { }
@@ -49,7 +61,7 @@ foreach ($f in Get-OlMailFoldersRecursive -Folder $root) {
 
 # ---- received mail: senders, topics, newsletters ---------------------------------------------
 $senders = @{}; $topics = @{}; $scannedIn = 0
-$inbox = if ($Store) { $root.Folders | Where-Object { $_.Name -in 'Inbox','收件匣' } | Select-Object -First 1 } else { $ns.GetDefaultFolder(6) }
+$inbox = Get-StoreDefault 6 @('Inbox','收件匣','收件箱')
 foreach ($f in Get-OlMailFoldersRecursive -Folder $inbox) {
     $items = $f.Items; $items.Sort('[ReceivedTime]', $true)
     $m = $items.GetFirst()
@@ -71,7 +83,7 @@ foreach ($f in Get-OlMailFoldersRecursive -Folder $inbox) {
 
 # ---- sent mail: recipients ---------------------------------------------------------------------
 $recips = @{}; $scannedOut = 0
-$sent = if ($Store) { $root.Folders | Where-Object { $_.Name -in 'Sent Items','寄件備份' } | Select-Object -First 1 } else { $ns.GetDefaultFolder(5) }
+$sent = Get-StoreDefault 5 @('Sent Items','寄件備份','已发送邮件')
 if ($sent) {
     $items = $sent.Items; $items.Sort('[SentOn]', $true)
     $m = $items.GetFirst()
@@ -92,7 +104,7 @@ if ($sent) {
 # ---- recurring meetings --------------------------------------------------------------------------
 $recurring = @()
 try {
-    $cal = if ($Store) { $root.Folders | Where-Object { $_.Name -in 'Calendar','行事曆' } | Select-Object -First 1 } else { $ns.GetDefaultFolder(9) }
+    $cal = Get-StoreDefault 9 @('Calendar','行事曆','日历')
     $items = $cal.Items; $items.IncludeRecurrences = $false
     $it = $items.GetFirst()
     while ($it -ne $null) {

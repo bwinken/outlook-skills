@@ -37,20 +37,11 @@ This plugin **never writes to Outlook**. Concretely, no script or skill may:
 
 Reading through COM does not change read/unread state. The shared library `scripts/OutlookReadOnly.ps1` exposes only getters; add new skills on top of it and keep the same rule.
 
-## Execution policy
+## Running the PowerShell scripts
 
-Many Windows machines refuse to run `.ps1` files ("running scripts is disabled on this system"). The skills handle this in two layers:
+Skills call `python scripts/run.py <Script.ps1> [args]` rather than PowerShell directly. The launcher picks `powershell.exe` (Windows PowerShell 5.1) or `pwsh`, passes arguments without any shell quoting, retries as a script block when Group Policy enforces the execution policy (the policy only governs script files, and the plugin never runs `Set-ExecutionPolicy`), keeps the UTF-8 BOM that PowerShell 5.1 needs to read the scripts' Chinese strings, and returns the JSON through `-OutFile` as UTF-8 so console code pages cannot garble it. `--out <file>` keeps the JSON on disk.
 
-1. **Default policy (Restricted / RemoteSigned)**: every skill runs scripts with `powershell -ExecutionPolicy Bypass -File ...`. That flag applies to the single process only and needs no admin rights or machine changes.
-2. **Policy enforced by Group Policy**: the flag is ignored. The skills then fall back to loading the script text as a script block:
-   ```
-   powershell -NoProfile -Command "$env:OUTLOOK_SKILLS_SCRIPTS='<scripts dir>'; & ([scriptblock]::Create((Get-Content -Raw -LiteralPath '<scripts dir>\Search-OutlookMail.ps1'))) -From alice"
-   ```
-   Execution policy only governs script *files*; text passed to `-Command` or turned into a script block is not checked. For the same reason the shared helper is a plain `.ps1` that scripts dot-source through a script block, not a `.psm1` imported with `Import-Module`. When run this way `$PSScriptRoot` is empty, so the scripts locate the helper through `OUTLOOK_SKILLS_SCRIPTS`.
-
-Neither layer changes any machine or user setting. The plugin never runs `Set-ExecutionPolicy`.
-
-What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the COM-based skills will not work there regardless of execution policy. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
+What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the COM-based skills will not work there. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
 
 ## Fuzzy search with a reranker (optional)
 
@@ -162,6 +153,7 @@ plugins/outlook/
   .claude-plugin/plugin.json
   install.py                installer for Zoo Code (.roo/skills) / .agents/skills hosts
   scripts/
+    run.py                    launcher: interpreter, execution policy, BOM, UTF-8 output
     OutlookReadOnly.ps1       shared read-only COM helpers (dot-sourced, not a module)
     Get-OutlookStatus.ps1
     Search-OutlookMail.ps1

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     READ-ONLY. Returns every message in a conversation (thread), oldest first, with full bodies.
 

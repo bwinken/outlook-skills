@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Shared READ-ONLY helpers for the Outlook skills plugin.
 
@@ -82,6 +82,27 @@ function Get-OlStores {
     return $result
 }
 
+function Resolve-OlKnownFolderName {
+    # Maps English or localized well-known folder names to an OlFolder key; $null if not well-known.
+    param([string]$Name)
+    $n = $Name.Trim()
+    $map = @{
+        'inbox' = 'Inbox'; '收件匣' = 'Inbox'; '收件箱' = 'Inbox'
+        'sent items' = 'SentMail'; 'sentmail' = 'SentMail'; '寄件備份' = 'SentMail'; '已发送邮件' = 'SentMail'
+        'deleted items' = 'DeletedItems'; 'deleteditems' = 'DeletedItems'; '刪除的郵件' = 'DeletedItems'; '已删除邮件' = 'DeletedItems'
+        'drafts' = 'Drafts'; '草稿' = 'Drafts'
+        'junk email' = 'Junk'; 'junk' = 'Junk'; '垃圾郵件' = 'Junk'; '垃圾邮件' = 'Junk'
+        'outbox' = 'Outbox'; '寄件匣' = 'Outbox'
+        'calendar' = 'Calendar'; '行事曆' = 'Calendar'; '日历' = 'Calendar'
+        'contacts' = 'Contacts'; '連絡人' = 'Contacts'; '联系人' = 'Contacts'
+        'tasks' = 'Tasks'; '工作' = 'Tasks'; '任务' = 'Tasks'
+    }
+    $key = $n.ToLowerInvariant()
+    if ($map.ContainsKey($key)) { return $map[$key] }
+    if ($map.ContainsKey($n)) { return $map[$n] }
+    return $null
+}
+
 function Get-OlFolder {
     <#
     .SYNOPSIS
@@ -112,12 +133,19 @@ function Get-OlFolder {
             $parts = @($parts | Select-Object -Skip 1)
         }
         $st = Get-OlStores | Where-Object { $_.DisplayName -eq $storeName } | Select-Object -First 1
-        if (-not $st) { throw "Store '$storeName' not found." }
+        if (-not $st) { throw "Store '$storeName' not found. Stores: $((Get-OlStores | ForEach-Object { $_.DisplayName }) -join ', ')" }
         $root = $st.GetRootFolder()
+        # "Inbox", "Sent Items" etc. inside a named store: resolve through the store's default folders so
+        # localized folder names (收件匣, 寄件備份) and PST stores work the same way.
+        if ($parts.Count -gt 0) {
+            $known = Resolve-OlKnownFolderName $parts[0]
+            if ($known) {
+                try { $root = $st.GetDefaultFolder($script:OlFolder[$known]); $parts = @($parts | Select-Object -Skip 1) } catch { }
+            }
+        }
     } else {
         # Relative paths start from the default store. Well-known names map to default folders.
-        $first = $parts[0]
-        $known = $script:OlFolder.Keys | Where-Object { $_ -ieq $first -or ($first -ieq 'Sent Items' -and $_ -eq 'SentMail') -or ($first -ieq 'Deleted Items' -and $_ -eq 'DeletedItems') -or ($first -ieq 'Junk Email' -and $_ -eq 'Junk') } | Select-Object -First 1
+        $known = Resolve-OlKnownFolderName $parts[0]
         if ($known) {
             $root = $ns.GetDefaultFolder($script:OlFolder[$known])
             $parts = @($parts | Select-Object -Skip 1)

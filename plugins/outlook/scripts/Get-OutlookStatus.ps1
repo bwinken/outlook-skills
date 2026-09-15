@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     READ-ONLY. Reports Outlook version, profiles, accounts, data files (.pst/.ost) and folder counts.
 

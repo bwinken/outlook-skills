@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     READ-ONLY. Searches mail items by sender, subject, body, date range, attachments and unread state.
 
@@ -12,6 +12,7 @@
     Search-OutlookMail.ps1 -Subject "invoice" -HasAttachments -AllFolders
     Search-OutlookMail.ps1 -Folder "Inbox/Projects" -Unread -IncludeBody -OutFile hits.json
     Search-OutlookMail.ps1 -AnyOf "報價","quote","pricing" -After 2026-06-01 -AllFolders -Max 300 -PreviewLength 500 -OutFile candidates.json
+    Search-OutlookMail.ps1 -From "Cassie" -AllStores -AllFolders      # Exchange mailbox and every PST
 #>
 [CmdletBinding()]
 param(
@@ -28,6 +29,7 @@ param(
     [string]$Folder = '',          # e.g. "Inbox", "Sent Items", "Inbox/Projects", "\\Store\Inbox"
     [string]$Store = '',
     [switch]$AllFolders,           # recurse through every mail folder of the store
+    [switch]$AllStores,            # search every store (Exchange mailbox, PST archives...), not just the default one
     [int]$Max = 50,
     [switch]$IncludeBody,
     [int]$PreviewLength = 200,     # BodyPreview length; raise to ~500 when feeding rerank.py
@@ -74,8 +76,17 @@ if ($Unread)         { $clauses += """urn:schemas:httpmail:read"" = 0" }
 $dasl = if ($clauses.Count -gt 0) { '@SQL=' + ($clauses -join ' AND ') } else { '' }
 
 # ---- Resolve folders
-$root = Get-OlFolder -Path $Folder -Store $Store
-$folders = if ($AllFolders) { @(Get-OlMailFoldersRecursive -Folder $root) } else { @($root) }
+$folders = @()
+$storeNames = if ($AllStores) { @(Get-OlStores | Where-Object { $_.ExchangeStoreType -ne 1 } | ForEach-Object { $_.DisplayName }) } else { @($Store) }
+foreach ($sn in $storeNames) {
+    try {
+        $root = Get-OlFolder -Path $Folder -Store $sn
+    } catch {
+        if ($AllStores) { continue }   # a store without that folder (e.g. a PST with no Inbox) is skipped
+        throw
+    }
+    $folders += if ($AllFolders) { @(Get-OlMailFoldersRecursive -Folder $root) } else { @($root) }
+}
 
 $results = @()
 foreach ($f in $folders) {
@@ -107,7 +118,7 @@ $out = [pscustomobject][ordered]@{
         After = if ($PSBoundParameters.ContainsKey('After')) { $After.ToString('s') } else { $null }
         Before = if ($PSBoundParameters.ContainsKey('Before')) { $Before.ToString('s') } else { $null }
         HasAttachments = [bool]$HasAttachments; Unread = [bool]$Unread
-        Folders = @($folders | ForEach-Object { [string]$_.FolderPath })
+        Folders = @($folders | ForEach-Object { [string]$_.FolderPath }); AllStores = [bool]$AllStores
         Dasl = $dasl; Max = $Max
     }
     Count   = $results.Count

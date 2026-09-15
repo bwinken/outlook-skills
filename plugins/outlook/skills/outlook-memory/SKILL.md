@@ -23,10 +23,10 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" new --category people --title "
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" append "Alice Chen" --body "- 合約由她發起" [--tags contracts]
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" touch "<title>"        # after editing a body by hand
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" remove "<title>"
-powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_PLUGIN_ROOT}/scripts/Get-OutlookOverview.ps1" -Days 180 -OutFile "<tmp>/overview.json"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookOverview.ps1 -Days 180 --out "<tmp>/overview.json"
 ```
 
-The overview script has the same execution-policy fallback as the other PowerShell scripts (see any COM skill's Run section).
+`run.py` handles the PowerShell interpreter, execution policy and encoding; never call the .ps1 directly. `settings.py init` and `memory.py init` are the same command.
 
 ## 1. First run (onboarding)
 
@@ -38,7 +38,7 @@ The overview script has the same execution-policy fallback as the other PowerShe
    - A "not now" answer means: continue the original task, do not ask again this conversation, and do not create anything.
 2. On "empty only": run `settings.py init`, say where the folders are, continue the original task.
 3. On "build and scan":
-   - `settings.py init`, then run `Get-OutlookOverview.ps1 -Days 180 -OutFile "<tmp>/overview.json"` (use `-Store` from settings if set). It returns counts only, no bodies.
+   - `settings.py init`, then run `run.py Get-OutlookOverview.ps1 -Days 180 --out "<tmp>/overview.json"` (add `-Store` from settings, or the .pst store outlook-status showed as holding the mail). It returns counts only, no bodies.
    - Draft notes from the JSON, following reference.md §2 for what each category takes and how to name titles. Aim for quality over quantity: roughly 10 to 25 people, every folder with a clear purpose, 5 to 15 projects/topics, all recurring meetings, and skip newsletters unless the user wants them.
    - Show the draft as a table (title, category, tags, one-line content) and ask with the same question tool: 「全部寫入」/「讓我挑」/「取消」. For "let me pick", ask a multi-select question listing the titles (Zoo Code has no multi-select: list the titles numbered and ask which numbers to keep).
    - Write the approved notes with `memory.py new --source bootstrap`, one call per note. Report how many were written per category and where.

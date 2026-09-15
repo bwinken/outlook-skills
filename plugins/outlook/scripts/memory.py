@@ -18,6 +18,7 @@ Layout (user level; a working-directory .outlook-skills/ may hold the same tree 
 Categories: people, folders, projects, preferences, recurring (others allowed).
 
 Usage:
+    python memory.py init [--local]                      # same as settings.py init
     python memory.py list [--category people] [--json]
     python memory.py find "alice" [--json]                 # matches title, tags, body (case-insensitive)
     python memory.py new --category people --title "Alice Chen" --tags legal,contoso --body "- 法務窗口" [--source bootstrap] [--local]
@@ -232,9 +233,14 @@ def cmd_remove(a):
     print(json.dumps({"removed": str(p)}, ensure_ascii=False))
 
 
+def cmd_init(a):
+    ps.cmd_init(type("A", (), {"local": a.local})())
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("init"); p.add_argument("--local", action="store_true"); p.set_defaults(fn=cmd_init)
     p = sub.add_parser("list"); p.add_argument("--category"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_list)
     p = sub.add_parser("find"); p.add_argument("query"); p.add_argument("--json", action="store_true"); p.set_defaults(fn=cmd_find)
     p = sub.add_parser("new"); p.add_argument("--category", required=True); p.add_argument("--title", required=True)
