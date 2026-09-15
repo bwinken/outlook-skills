@@ -27,7 +27,7 @@ Options: `-Horizon N` days ahead to look for the meeting (default 7); `-Days N` 
 2. Run the script with `-AllStores` when mail lives in a PST. Use `-OutFile` and read the file; the output can be large.
 3. Resolve attendees against memory (`memory.py find <surname>`) so roles are known (法務窗口, 供應商 PM ...).
 4. Brief per reference.md: purpose and logistics, per-attendee "what is open with them", the thread about the subject, attachments worth opening beforehand, and open questions to raise. Quote decisions and dates from the mails; do not invent.
-5. Offer read-only follow-ups: open a specific thread, extract an attachment with `outlook-attachments -SaveTo` (ask first), or draft talking points in chat.
+5. Offer read-only follow-ups: open a specific thread, extract an attachment with `outlook-search` (attachments, `-SaveTo`) (ask first), or draft talking points in chat.
 
 ## Settings and memory
 

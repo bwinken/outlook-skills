@@ -50,7 +50,7 @@ Match the user's language; labels below are Traditional Chinese.
 Rules:
 - Roles come from memory notes; write `（不在記憶裡）` rather than guessing.
 - "還開著的事" is built from `BodyPreview` and, when needed, one `outlook-thread` call on the newest mail per attendee; cite date and sender for every claim.
-- Mark with ❗ anything the user still owes (use outlook-followup logic on the previews: a question to me with no later mail from me).
+- Mark with ❗ anything the user still owes (use outlook-morning-brief logic on the previews: a question to me with no later mail from me).
 - List at most 5 attachments; prefer ones from the last two weeks and those named in the mails.
 - Questions to raise must come from the mails (open items, unanswered asks, contradictions); no generic advice.
 - Never offer to accept, decline or reschedule; never send anything.

@@ -1,6 +1,6 @@
 ---
 name: outlook-search
-description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sender, recipient, subject, body text, date range, unread state, or attachments, across one folder or the whole store. Use when the user asks to find emails, "who sent me...", "emails from X last week", "unread mails about Y", "mails with attachments", or 找信 / 搜尋郵件 / 某人寄的信 / 未讀郵件.
+description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sender, recipient, subject, body text, date range, unread state or attachments, across one folder, the whole store or every store; fuzzy search with keyword expansion and an optional reranker; and attachment search by file name, type or size with consented copy-out. Use when the user asks to find emails, "who sent me...", "emails from X last week", "unread mails about Y", "find the contract PDF Alice sent", "biggest attachments", "save that attachment", or 找信 / 搜尋郵件 / 某人寄的信 / 未讀郵件 / 找附件 / 最大的附件 / 把附件存出來.
 ---
 
 # outlook-search
@@ -75,6 +75,23 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
 5. **Local scan** (the fallback; no network, nothing leaves the machine): read `<tmp>/candidates.json` yourself and judge relevance from `Subject`, `From` and `BodyPreview`. Pick up to 10 that match the request, newest first among equals. Present them with the 2a table and say plainly that no reranker was used and the pick is your own reading of the previews (see reference.md §4). If the previews are not enough to tell, re-run the search with `-IncludeBody` for the 5 most likely and read those. Then, if the answer is still uncertain, ask the user for one more constraint rather than guessing.
 
 Never send full bodies to the gateway (the script only sends previews), and never send candidates the user has not agreed to send.
+
+## Attachments
+
+`outlook_attachments.py` is the same search with attachment filters on top; the rows are attachments, not mails. Copying out uses Outlook's SaveAsFile, which reads the attachment and writes only to the folder the user chose.
+
+```
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Name 合約 -After 2026-06-01
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Ext pptx,xlsx -MinSizeKB 500 -Sort size -Top 20 -AllStores -AllFolders
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -From alice -Ext pdf -SaveTo "C:/Users/<me>/Desktop/from-alice"
+```
+
+All search options apply, plus `-Name` (file name contains), `-Ext`, `-MinSizeKB`, `-Sort date|size|name`, `-Top N`, `-IncludeEmbedded` (inline images, OLE), `-SaveTo <folder>`.
+
+1. "Biggest" = `-Sort size -AllFolders` (add `-AllStores` for PST mail); "from X" = `-From`; "last month" = `-After` / `-Before`.
+2. Run without `-SaveTo` first and show the list (reference.md §5).
+3. **Copying out needs consent**: pass `-SaveTo` only after the user named or agreed to a folder in this conversation; ask with the host's question tool when the request was vague. Report the exact paths written.
+4. Never open, run or render extracted files. Refuse to extract from a mail the phishing check marks 🚨.
 
 ## Settings and memory
 

@@ -5,17 +5,14 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | Skill | What it does |
 |---|---|
 | `outlook-status` | Outlook version, profiles, accounts, .pst/.ost files, folder counts |
-| `outlook-search` | Search mail by sender, subject, body, date, attachments, unread |
+| `outlook-search` | Search mail by sender, subject, body, date, attachments, unread; fuzzy search; attachment search and consented copy-out |
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
-| `outlook-followup` | Mails waiting for a reply, in both directions |
-| `outlook-morning-brief` | Today's meetings, new mail by urgency, replies owed and awaited |
+| `outlook-morning-brief` | Today's meetings, new mail by urgency, replies owed and awaited (each part on its own too) |
 | `outlook-meeting-prep` | Attendees, recent mail with them, topic thread and attachments before a meeting |
-| `outlook-attachments` | Find, filter, sort attachments; copy out with consent |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook (standard library only) |
-| `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
-| `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
+| `outlook-memory` | Personal memory (onboarding, remember, forget) and the plugin's settings |
 
 ## Hosts
 
@@ -81,7 +78,7 @@ The skills keep their own configuration outside Outlook, in two optional folders
 | `~/.outlook-skills/` | the user, every project |
 | `./.outlook-skills/` (working directory or any parent up to home) | this project |
 
-`settings.json` holds only the keys you changed; `settings.example.json` lists them all with defaults (working hours, minimum free slot, default search window and folder, default store, reranker gateway and consent, reply language). `scripts/settings.py show` merges the layers and reports which file set each key; every skill runs it once per conversation. Change values with the `outlook-settings` skill or `settings.py set key value [--local]`.
+`settings.json` holds only the keys you changed; `settings.example.json` lists them all with defaults (working hours, minimum free slot, default search window and folder, default store, reranker gateway and consent, reply language). `scripts/settings.py show` merges the layers and reports which file set each key; every skill runs it once per conversation. Change values with the `outlook-memory` skill or `settings.py set key value [--local]`.
 
 ## Memory
 
@@ -176,7 +173,6 @@ plugins/outlook/
     outlook-agenda/    SKILL.md + reference.md
     outlook-availability/ SKILL.md + reference.md   (same script as agenda)
     outlook-open-msg/  SKILL.md + reference.md
-    outlook-settings/  SKILL.md + reference.md
     outlook-memory/    SKILL.md + reference.md
 ```
 

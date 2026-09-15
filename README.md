@@ -19,17 +19,14 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | Skill | Ask things like |
 |---|---|
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
-| `outlook-search` | 找 Alice 上週寄給我的信、有附件的未讀郵件、模糊搜尋「上次跟供應商談價格的信」（可選 reranker） |
+| `outlook-search` | 找 Alice 上週寄給我的信、模糊搜尋「上次跟供應商談價格的信」、找附件、最大的附件、把附件存出來 |
 | `outlook-thread` | 幫我摘要「Q3 預算」這串討論、結論和待辦是什麼 |
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
-| `outlook-followup` | 誰還沒回我、我還欠誰回信 |
-| `outlook-morning-brief` | 早安今天怎樣、有什麼新信、有沒有急事、今天要處理什麼 |
+| `outlook-morning-brief` | 早安今天怎樣、有什麼新信、有沒有急事、誰還沒回我、我還欠誰回信 |
 | `outlook-meeting-prep` | 幫我準備下一場會議、跟他們最近的往來和附件 |
-| `outlook-attachments` | 找 Alice 寄的合約 PDF、最大的附件、把附件存出來 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
-| `outlook-settings` | 設定工作時間、目前用什麼設定、reranker gateway |
-| `outlook-memory` | 第一次使用時建立個人化記憶、記住 Alice 是誰、忘掉、你記得什麼 |
+| `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間、目前的設定 |
 
 All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements and the full read-only policy.
 
@@ -57,7 +54,7 @@ All skills only read. They never send, save, move, delete, flag or mark anything
 | `rerank.gateway` / `.model` / `.api_key` / `.auto_consent` | null / bge-reranker-v2-m3 / null / false | reranker 設定；auto_consent 為 true 就不每次問 |
 | `language` | zh-TW | 回覆語言 |
 
-用 `outlook-settings` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
+用 `outlook-memory` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
 
 ## 記憶
 
