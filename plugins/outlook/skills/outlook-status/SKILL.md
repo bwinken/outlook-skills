@@ -14,13 +14,13 @@ Needs Windows with Classic Outlook and a host that executes commands on that sam
 ## Run
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookStatus.ps1
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_status.py"
 ```
 
-Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
+Pure Python (needs `pip install pywin32` once on the Windows machine). Options accept PowerShell-style `-From` or `--from` spellings. Run it from any tool (Bash, cmd, PowerShell); nothing goes through a shell that could mangle quotes, `$` or Chinese. Output is UTF-8 JSON on stdout; `-OutFile <file>` writes it to a file instead (use for large results). If it reports that pywin32 is missing or that Outlook COM cannot start, say so and point to the plugin README requirements.
 
 Options:
-- `--out <path>`: keep the JSON in a file instead of printing it (use for large mailboxes).
+- `-OutFile <path>`: write the JSON to a file instead of stdout (use for large mailboxes).
 - `-SkipCom`: only inspect the registry and file system; do not connect to Outlook. Use this when Outlook is not installed, is New Outlook, or the user does not want Outlook launched.
 
 ## What the JSON contains

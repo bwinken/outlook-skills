@@ -2,7 +2,7 @@
 
 ## 1. Script output (JSON)
 
-Same as outlook-agenda (`Get-OutlookCalendar.ps1`): `Range`, `Calendar`, `Count`, `Conflicts`, `Items[]` with `Start`, `End`, `AllDayEvent`, `Subject`, `Location`, `Organizer`, `BusyStatus`, `MeetingStatus`, `ResponseStatus`, `IsRecurring`. See `../outlook-agenda/reference.md` for the full field table. Items with `BusyStatus = Free` are already excluded by the script.
+Same as outlook-agenda (`outlook_calendar.py`): `Range`, `Calendar`, `Count`, `Conflicts`, `Items[]` with `Start`, `End`, `AllDayEvent`, `Subject`, `Location`, `Organizer`, `BusyStatus`, `MeetingStatus`, `ResponseStatus`, `IsRecurring`. See `../outlook-agenda/reference.md` for the full field table. Items with `BusyStatus = Free` are already excluded by the script.
 
 ## 2. Gap computation
 

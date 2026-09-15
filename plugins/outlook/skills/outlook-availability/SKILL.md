@@ -14,10 +14,10 @@ Needs Windows with Classic Outlook and a host that executes commands on that sam
 ## Run
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookCalendar.ps1 [options]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_calendar.py" [options]
 ```
 
-Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
+Pure Python (needs `pip install pywin32` once on the Windows machine). Options accept PowerShell-style `-From` or `--from` spellings. Run it from any tool (Bash, cmd, PowerShell); nothing goes through a shell that could mangle quotes, `$` or Chinese. Output is UTF-8 JSON on stdout; `-OutFile <file>` writes it to a file instead (use for large results). If it reports that pywin32 is missing or that Outlook COM cannot start, say so and point to the plugin README requirements.
 
 Options (same script as outlook-agenda):
 - default: today. `-Start 2026-09-16 -Days 1` for one day; `-Start ... -End ...` for a range (End exclusive); `-Days 7` for the coming week.

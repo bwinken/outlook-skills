@@ -75,3 +75,27 @@ Then the question. After writing: `已寫入 {N} 條到 ~/.outlook-skills/memory
 ```
 
 Show the body of a single note with `memory.py show` when asked.
+
+## 5. Settings
+
+| Key | Default | Used by | Meaning |
+|---|---|---|---|
+| `language` | `zh-TW` | all | language of Claude's replies and table labels |
+| `working_hours.start` / `.end` | `09:00` / `18:00` | availability | working window for free-slot search |
+| `working_hours.days` | `[1,2,3,4,5]` | availability | ISO weekdays counted as working days (1 = Monday) |
+| `availability.min_slot_minutes` | `30` | availability | gaps shorter than this are dropped |
+| `search.default_lookback_days` | `90` | search | `-After` when the user gives no date hint |
+| `search.default_folder` | `Inbox` | search, thread | `-Folder` when none is given |
+| `search.all_folders` | `false` | search | pass `-AllFolders` by default |
+| `search.max_candidates` | `300` | search | `-Max` for reranker candidate fetches |
+| `search.direct_read_max` | `20` | search | up to this many hits are read directly instead of reranked |
+| `store` | `null` | all COM skills | `-Store` for a shared or archive mailbox |
+| `rerank.gateway` / `.model` / `.api_key` | `null` | search (rerank.py) | override the gateway resolution; beats `~/.claude/settings.json`, loses to env vars and flags |
+| `rerank.auto_consent` | `false` | search | skip the per-run confirmation before sending candidates to the reranker |
+| `status.skip_com` | `false` | status | always run `outlook-status` with `-SkipCom` (New Outlook machines) |
+
+`settings.py show` returns `first_run` (true when `~/.outlook-skills` does not exist yet), `settings` (merged), `sources` (key → file for every non-default key), `layers` (files read), `memory` (index: count, per_category, entries with title/category/tags/updated/path), `memory_hint`, `local_dir`, `user_dir`.
+
+Presenting `show`:
+
+```

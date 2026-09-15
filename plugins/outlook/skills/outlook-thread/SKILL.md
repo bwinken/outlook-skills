@@ -14,10 +14,10 @@ Needs Windows with Classic Outlook and a host that executes commands on that sam
 ## Run
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookThread.ps1 [selector] [options]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_thread.py" [selector] [options]
 ```
 
-Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
+Pure Python (needs `pip install pywin32` once on the Windows machine). Options accept PowerShell-style `-From` or `--from` spellings. Run it from any tool (Bash, cmd, PowerShell); nothing goes through a shell that could mangle quotes, `$` or Chinese. Output is UTF-8 JSON on stdout; `-OutFile <file>` writes it to a file instead (use for large results). If it reports that pywin32 is missing or that Outlook COM cannot start, say so and point to the plugin README requirements.
 
 Selectors (use one):
 - `-EntryID <id>`: precise, from `outlook-search` output.
@@ -27,7 +27,7 @@ Selectors (use one):
 Options:
 - `-Folder`, `-Store`: where to look for the anchor when using `-Subject`.
 - `-MaxBodyChars 20000`: per-message body cap.
-- `--out thread.json`: keep the JSON in a file (recommended for long threads, then read the file).
+- `-OutFile thread.json`: write to a file (recommended for long threads, then read the file).
 
 The script first uses Outlook's conversation index; for POP/PST stores without conversation support it falls back to matching `ConversationTopic` across all mail folders (`Method` field tells you which).
 

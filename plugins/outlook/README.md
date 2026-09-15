@@ -5,13 +5,14 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | Skill | What it does |
 |---|---|
 | `outlook-status` | Outlook version, profiles, accounts, .pst/.ost files, folder counts |
-| `outlook-search` | Search mail by sender, subject, body, date, attachments, unread |
+| `outlook-search` | Search mail by sender, subject, body, date, attachments, unread; fuzzy search; attachment search and consented copy-out |
 | `outlook-thread` | Read a whole conversation with full bodies, ready to summarise |
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
-| `outlook-open-msg` | Parse a .msg / .eml file without Outlook |
-| `outlook-settings` | The plugin's own settings: working hours, defaults, reranker gateway and consent, reply language |
-| `outlook-memory` | Personal memory: first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know |
+| `outlook-morning-brief` | Today's meetings, new mail by urgency, replies owed and awaited (each part on its own too) |
+| `outlook-meeting-prep` | Attendees, recent mail with them, topic thread and attachments before a meeting |
+| `outlook-open-msg` | Parse a .msg / .eml file without Outlook (standard library only) |
+| `outlook-memory` | Personal memory (onboarding, remember, forget) and the plugin's settings |
 
 ## Hosts
 
@@ -20,9 +21,8 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 
 ## Requirements
 
-- Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook-status -SkipCom` still works there.
-- Windows PowerShell 5.1 (built in) or PowerShell 7 for the COM-based skills (status, search, thread, agenda, availability, memory onboarding).
-- Python 3.8+ for `outlook-open-msg`; `pip install extract-msg` for .msg files.
+- Windows with **Classic Outlook** (2016 / 2019 / 2021 / Microsoft 365). "New Outlook" has no COM object model and is not supported; `outlook_status.py -SkipCom` still works there.
+- Python 3.8+ and one package: `pip install pywin32` (COM access). Everything else is the standard library.
 - Outlook may be open or closed. If closed, the COM call starts it in the background under the current user's profile.
 
 ## Read-only policy
@@ -35,13 +35,11 @@ This plugin **never writes to Outlook**. Concretely, no script or skill may:
 - compact, repair, detach or attach data files;
 - write anywhere except a user-specified `-OutFile` / `--extract-to` path and the plugin's own `.outlook-skills/` folders.
 
-Reading through COM does not change read/unread state. The shared library `scripts/OutlookReadOnly.ps1` exposes only getters; add new skills on top of it and keep the same rule.
+Reading through COM does not change read/unread state. The shared module `scripts/outlook_com.py` exposes only getters; add new skills on top of it and keep the same rule.
 
-## Running the PowerShell scripts
+## Running the scripts
 
-Skills call `python scripts/run.py <Script.ps1> [args]` rather than PowerShell directly. The launcher picks `powershell.exe` (Windows PowerShell 5.1) or `pwsh`, passes arguments without any shell quoting, retries as a script block when Group Policy enforces the execution policy (the policy only governs script files, and the plugin never runs `Set-ExecutionPolicy`), keeps the UTF-8 BOM that PowerShell 5.1 needs to read the scripts' Chinese strings, and returns the JSON through `-OutFile` as UTF-8 so console code pages cannot garble it. `--out <file>` keeps the JSON on disk.
-
-What it cannot get around: AppLocker / WDAC **Constrained Language Mode** blocks `New-Object -ComObject`, so the COM-based skills will not work there. `outlook-open-msg` (Python, no COM) still works, and `outlook-status -SkipCom` still reports registry and file-system information.
+Every script is plain Python: `python scripts/outlook_search.py -From alice -After 2026-09-01`. Options accept PowerShell-style (`-From`) or long (`--from`) spellings, output is UTF-8 JSON on stdout or `-OutFile`. Nothing runs through PowerShell, so execution policy, code pages and BOMs are not a concern. AppLocker / WDAC policies that block COM automation still block these scripts; `outlook-open-msg` and `outlook_status.py -SkipCom` work regardless.
 
 ## Fuzzy search with a reranker (optional)
 
@@ -80,7 +78,7 @@ The skills keep their own configuration outside Outlook, in two optional folders
 | `~/.outlook-skills/` | the user, every project |
 | `./.outlook-skills/` (working directory or any parent up to home) | this project |
 
-`settings.json` holds only the keys you changed; `settings.example.json` lists them all with defaults (working hours, minimum free slot, default search window and folder, default store, reranker gateway and consent, reply language). `scripts/settings.py show` merges the layers and reports which file set each key; every skill runs it once per conversation. Change values with the `outlook-settings` skill or `settings.py set key value [--local]`.
+`settings.json` holds only the keys you changed; `settings.example.json` lists them all with defaults (working hours, minimum free slot, default search window and folder, default store, reranker gateway and consent, reply language). `scripts/settings.py show` merges the layers and reports which file set each key; every skill runs it once per conversation. Change values with the `outlook-memory` skill or `settings.py set key value [--local]`.
 
 ## Memory
 
@@ -102,7 +100,7 @@ source: bootstrap
 
 The title is the name someone would use to find the note again (a person's name, a folder path, a project's short name, a meeting subject). Related facts go into the existing file (`memory.py append`), which bumps `updated`; `memory.py find` searches title, tags and body so duplicates are avoided.
 
-**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion in Claude Code, ask_followup_question in Zoo Code) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `Get-OutlookOverview.ps1` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
+**First run.** `settings.py show` returns `first_run: true` while `~/.outlook-skills` does not exist. Whichever skill sees it hands over to `outlook-memory`, which asks the user (AskUserQuestion in Claude Code, ask_followup_question in Zoo Code) whether to build a personal memory: build and scan the mailbox, create an empty one, or not now. With a scan, `outlook_overview.py` reads the last 180 days and returns counts only (top senders and recipients, folders, frequent conversation topics, newsletters, recurring meetings; no bodies). Claude drafts notes from that, shows them as a table, and writes only the ones the user approves (`source: bootstrap`).
 
 **Everyday use.** "記住 …" appends or creates a note; "忘掉 …" removes one and says what was removed; "你記得什麼" lists titles by category; "重新掃描信箱" re-runs the overview and proposes only new or changed notes. Other skills read just the index (title, category, tags, updated) and open a note only when a request names a person, folder, project or routine.
 
@@ -153,17 +151,21 @@ plugins/outlook/
   .claude-plugin/plugin.json
   install.py                installer for Zoo Code (.roo/skills) / .agents/skills hosts
   scripts/
-    run.py                    launcher: interpreter, execution policy, BOM, UTF-8 output
-    OutlookReadOnly.ps1       shared read-only COM helpers (dot-sourced, not a module)
-    Get-OutlookStatus.ps1
-    Search-OutlookMail.ps1
-    Get-OutlookThread.ps1
-    Get-OutlookCalendar.ps1
-    read_msg.py
+    outlook_com.py            shared read-only COM helpers (pywin32), folder resolution, JSON output
+    outlook_status.py
+    outlook_search.py
+    outlook_thread.py
+    outlook_calendar.py       used by outlook-agenda and outlook-availability
+    outlook_overview.py       read-only mailbox overview for memory onboarding
+    outlook_followup.py       unanswered mails, sent or received
+    outlook_attachments.py    attachment search, filter, sort, SaveAsFile copy-out
+    outlook_meeting_prep.py   meeting briefing data
+    read_msg.py               .msg / .eml parser CLI
+    msgfile.py                standard-library OLE2 + MAPI reader for .msg
     rerank.py                 optional reranker client for fuzzy search (asks consent first)
     settings.py               merges ~/.outlook-skills and ./.outlook-skills settings; init / set / show
     memory.py                 memory notes: list / find / new / append / touch / remove
-    Get-OutlookOverview.ps1   read-only mailbox overview (top senders, folders, topics, recurring meetings) for onboarding
+  tests/                      fake Outlook object model + script tests (no Windows needed)
   skills/
     outlook-status/    SKILL.md + reference.md
     outlook-search/    SKILL.md + reference.md
@@ -171,7 +173,6 @@ plugins/outlook/
     outlook-agenda/    SKILL.md + reference.md
     outlook-availability/ SKILL.md + reference.md   (same script as agenda)
     outlook-open-msg/  SKILL.md + reference.md
-    outlook-settings/  SKILL.md + reference.md
     outlook-memory/    SKILL.md + reference.md
 ```
 

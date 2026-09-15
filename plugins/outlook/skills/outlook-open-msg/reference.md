@@ -15,7 +15,7 @@ JSON (default) for one file is an object; for several files an array. Markdown (
 | `body` | string | plain text; HTML converted to text when no text part exists |
 | `body_source` | `text` / `html` / `none` | |
 | `body_truncated` | true | only present when `--max-body` cut it |
-| `attachments[]` | `{ name, size, mime, saved_to? }` | `saved_to` only with `--extract-to` |
+| `attachments[]` | `{ name, size, mime, saved_to?, embedded_message? }` | `saved_to` only with `--extract-to`; `embedded_message` marks an attached .msg, which is listed but not extracted |
 | `headers[]` | `[{ name, value }]` | only with `--headers`; order preserved |
 
 ## 2. Presentation templates

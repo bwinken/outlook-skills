@@ -23,7 +23,7 @@ Options:
 - `--max-body N`: truncate body to N characters.
 - `--extract-to DIR`: copy attachments into DIR. This writes *only* to DIR; the source file stays untouched. Ask before extracting if the user did not request it.
 
-Requirements: `.eml` needs only Python 3. `.msg` needs `pip install extract-msg`; if the script says so, tell the user how to install it.
+Requirements: Python 3 only. Both `.eml` and `.msg` are parsed with the standard library (`msgfile.py` handles the OLE2 container and MAPI properties); nothing to install.
 
 ## Workflow
 

@@ -1,17 +1,16 @@
 # outlook-skills
 
-**Read-only** skills for a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace and installable into Zoo Code (Roo Code's successor) or any Agent Skills host.
+**Read-only** skills for a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace.
 
 ## Install
 
 | Host | 安裝 | 更新 |
 |---|---|---|
-| Claude Code | `/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
-| Zoo Code | `git clone https://github.com/bwinken/outlook-skills`<br>`python outlook-skills/install.py` | `git -C outlook-skills pull`<br>`python outlook-skills/install.py` |
+| Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
 
-Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁、Claude Code 或 Zoo Code 使用。
+Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用。
 
 裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 
@@ -20,32 +19,46 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | Skill | Ask things like |
 |---|---|
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
-| `outlook-search` | 找 Alice 上週寄給我的信、有附件的未讀郵件、模糊搜尋「上次跟供應商談價格的信」（可選 reranker） |
+| `outlook-search` | 找 Alice 上週寄給我的信、模糊搜尋「上次跟供應商談價格的信」、找附件、最大的附件、把附件存出來 |
 | `outlook-thread` | 幫我摘要「Q3 預算」這串討論、結論和待辦是什麼 |
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
+| `outlook-morning-brief` | 早安今天怎樣、有什麼新信、有沒有急事、誰還沒回我、我還欠誰回信 |
+| `outlook-meeting-prep` | 幫我準備下一場會議、跟他們最近的往來和附件 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
-| `outlook-settings` | 設定工作時間、目前用什麼設定、reranker gateway |
-| `outlook-memory` | 第一次使用時建立個人化記憶、記住 Alice 是誰、忘掉、你記得什麼 |
+| `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間、目前的設定 |
 
-All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements, the full read-only policy, and how the skills cope with a locked-down PowerShell execution policy.
+All skills only read. They never send, save, move, delete, flag or mark anything in Outlook. See [plugins/outlook/README.md](plugins/outlook/README.md) for requirements and the full read-only policy.
 
 ## 設定
 
-設定放在 `settings.json`，兩層，工作目錄那層逐 key 覆蓋使用者那層：
+`~/.outlook-skills/settings.json`（使用者層級）與 `./.outlook-skills/settings.json`（工作目錄層級，逐 key 覆蓋）。只寫你要改的 key，其餘用預設值；`settings.example.json` 列出全部。例如：
 
-| 位置 | 範圍 |
-|---|---|
-| `~/.outlook-skills/settings.json` | 使用者，所有專案共用 |
-| `./.outlook-skills/settings.json`（工作目錄或往上任一層） | 這個專案 |
+```json
+{
+  "store": "20230731",
+  "working_hours": { "start": "09:00", "end": "17:30" },
+  "search": { "default_lookback_days": 180 },
+  "rerank": { "auto_consent": true }
+}
+```
 
-可以設定的有工作時間、找空檔的最短長度、搜尋預設回溯天數與資料夾、預設信箱、reranker gateway 與是否免每次詢問、回覆語言。用 `outlook-settings` skill 改，或直接編輯檔案。
+| key | 預設 | 用途 |
+|---|---|---|
+| `store` | null | 預設信箱，郵件在 PST 時設成它的名稱 |
+| `working_hours.start` / `.end` / `.days` | 09:00 / 18:00 / 週一到五 | 找空檔的範圍 |
+| `availability.min_slot_minutes` | 30 | 短於此的空檔不列 |
+| `search.default_lookback_days` | 90 | 沒說日期時的搜尋範圍 |
+| `search.default_folder` / `.all_folders` | Inbox / false | 搜尋預設資料夾、是否含子資料夾 |
+| `search.direct_read_max` | 20 | 結果不超過此數直接讀，不用 reranker |
+| `rerank.gateway` / `.model` / `.api_key` / `.auto_consent` | null / bge-reranker-v2-m3 / null / false | reranker 設定；auto_consent 為 true 就不每次問 |
+| `language` | zh-TW | 回覆語言 |
+
+用 `outlook-memory` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
 
 ## 記憶
 
-記憶讓 skill 認得你的說法。你說「找 Alice 的信」時，Claude 需要知道 Alice 是 alice.chen@contoso.com；你說「供應商的信」時，需要知道那是 `Inbox/Vendors`。這些對應關係存在本機的 Markdown 檔，不在 Outlook 裡。
-
-**位置與格式**：`~/.outlook-skills/memory/<分類>/<標題>.md`，一個主題一個檔，分類有 people（人物）、folders（資料夾）、projects（專案與主題）、recurring（定期事務）、preferences（偏好）。每個檔案開頭有 YAML frontmatter：
+讓 skill 認得「Alice」是 alice.chen@contoso.com、「供應商的信」是 `Inbox/Vendors`。存在 `~/.outlook-skills/memory/<分類>/<標題>.md`，分類有 people、folders、projects、recurring、preferences，一個主題一檔，開頭是 YAML frontmatter：
 
 ```
 ---
@@ -54,33 +67,17 @@ category: people
 tags: [legal, contoso]
 created: 2026-09-14T10:02:11
 updated: 2026-09-14T13:40:05
-source: bootstrap
 ---
 - 法務窗口，alice.chen@contoso.com
-- 合約相關的信都由她發起（2026/09）
 ```
 
-標題就是以後用來找它的名字（人名、資料夾路徑、專案短名、會議主旨）。之後有相關的事要記，會直接加進同一個檔案，並更新 `updated`。
+- 第一次使用會問要不要建立：可以唯讀掃描最近 180 天的信箱（只看寄件者、主旨、資料夾、會議，不讀內文），草稿給你看過、你同意的才寫入。
+- 平常說「記住 …」「忘掉 …」「你記得什麼」即可；相關的事會加進同一個檔案。
+- 不存郵件內文、附件、金鑰；沒同意的不寫。記憶檔含人名與 email，工作目錄是 git repo 時把 `.outlook-skills/` 加進 `.gitignore`。
 
-**第一次使用**：任何 skill 發現 `~/.outlook-skills` 不存在時，會先問你要不要建立個人化記憶，三個選項：建立並掃描信箱、只建立空的、這次先不要。選擇掃描時，會唯讀彙整最近 180 天的常聯絡人、資料夾用途、常見主題、定期會議（只看計數與主旨，不讀內文），整理成草稿表格給你看，再問要全部寫入、讓你挑、還是取消。沒有你的同意不會寫任何檔案。
+## Roadmap
 
-**平常使用**：
-- 「記住 Alice 是法務窗口」：先找有沒有已存在的 Alice 檔，有就追加一行，沒有就新建。
-- 「忘掉 X」：刪掉那個檔或那一行，會告訴你刪了什麼。
-- 「你記得什麼？」：依分類列出所有標題。
-- 「重新掃描信箱」：再跑一次彙整，只提議新的或有變的內容。
-- 其他 skill 執行時只讀索引（標題、分類、tags），遇到需要的名字才打開對應的檔案，不會每次載入全部。
-
-**不會存進記憶的**：郵件內文、附件、任何金鑰，以及你沒同意要記的東西。記憶檔會有人名和 email，若工作目錄是 git repo，記得把 `.outlook-skills/` 加進 `.gitignore`。
-
-## Layout
-
-```
-.claude-plugin/marketplace.json   marketplace manifest
-plugins/outlook/                  the plugin (skills + scripts)
-install.py                        Zoo Code installer (shortcut to plugins/outlook/install.py)
-```
-
-## Roadmap ideas
-
-Not implemented yet, kept here as candidates: follow-up tracker (sent mails with no reply), inbox digest, meeting prep, attachment finder, mail-header phishing triage, rules audit (detect suspicious auto-forward rules), contacts lookup, .pst archive explorer.
+- 規則稽核：列出 Outlook rules，標出自動轉寄到外部、自動刪除等可疑設定
+- 聯絡人查詢
+- 收件匣裡的信直接做標頭釣魚分析（目前只有 .msg / .eml 檔）
+- 不開 Outlook 直接讀 .pst

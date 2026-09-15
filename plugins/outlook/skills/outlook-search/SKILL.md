@@ -1,6 +1,6 @@
 ---
 name: outlook-search
-description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sender, recipient, subject, body text, date range, unread state, or attachments, across one folder or the whole store. Use when the user asks to find emails, "who sent me...", "emails from X last week", "unread mails about Y", "mails with attachments", or 找信 / 搜尋郵件 / 某人寄的信 / 未讀郵件.
+description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sender, recipient, subject, body text, date range, unread state or attachments, across one folder, the whole store or every store; fuzzy search with keyword expansion and an optional reranker; and attachment search by file name, type or size with consented copy-out. Use when the user asks to find emails, "who sent me...", "emails from X last week", "unread mails about Y", "find the contract PDF Alice sent", "biggest attachments", "save that attachment", or 找信 / 搜尋郵件 / 某人寄的信 / 未讀郵件 / 找附件 / 最大的附件 / 把附件存出來.
 ---
 
 # outlook-search
@@ -14,10 +14,10 @@ Needs Windows with Classic Outlook and a host that executes commands on that sam
 ## Run
 
 ```
-python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Search-OutlookMail.ps1 [options]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_search.py" [options]
 ```
 
-Always go through `run.py` (from the Bash tool, or any shell): it finds Windows PowerShell 5.1 or pwsh, passes arguments without shell quoting (spaces, quotes, `$`, Chinese are safe), falls back automatically when Group Policy blocks `-ExecutionPolicy Bypass`, handles the UTF-8 BOM PowerShell 5.1 needs, and prints the script's JSON as UTF-8. Use `--out <file>` instead of `-OutFile` to keep the JSON on disk for large results. Do not run the .ps1 directly and do not change the machine's execution policy. AppLocker / Constrained Language Mode blocks COM entirely; see the plugin README.
+Pure Python (needs `pip install pywin32` once on the Windows machine). Options accept PowerShell-style `-From` or `--from` spellings. Run it from any tool (Bash, cmd, PowerShell); nothing goes through a shell that could mangle quotes, `$` or Chinese. Output is UTF-8 JSON on stdout; `-OutFile <file>` writes it to a file instead (use for large results). If it reports that pywin32 is missing or that Outlook COM cannot start, say so and point to the plugin README requirements.
 
 Options (all optional, combine freely):
 
@@ -39,7 +39,7 @@ Options (all optional, combine freely):
 | `-Max 50` | result cap, newest first |
 | `-IncludeBody` | include full plain-text body (slower, larger) |
 | `-PreviewLength 500` | length of `BodyPreview` (default 200); use ~500 for reranking |
-| `--out hits.json` | keep the JSON in a file instead of printing it |
+| `-OutFile hits.json` | write the JSON to a file instead of stdout |
 
 Text matching is case-insensitive substring. Folder names may be given in English (`Inbox`, `Sent Items`) or as shown in a localized Outlook (`收件匣`, `寄件備份`); both resolve inside any store. When the user's mail lives mostly in a .pst (outlook-status shows the Exchange Inbox nearly empty and a big PST store), pass `-Store "<pst name>"` or `-AllStores`, and suggest saving `store` in settings so it becomes the default.
 
@@ -54,7 +54,7 @@ Text matching is case-insensitive substring. Folder names may be given in Englis
 
 Substring matching misses typos, synonyms and mixed Chinese/English wording. Escalate in this order and stop as soon as the user has what they need. **Always narrow first; the reranker is only for when the narrowed set is still too big to read.**
 
-1. **Narrow with what is certain.** Turn every hard fact in the request into filters before any fuzzy step: sender or recipient, date range (default the last 90 days when the user says "recently" or gives no hint), folder, attachments. Run that search with `-Max 300 -PreviewLength 500 --out "<tmp>/candidates.json"`.
+1. **Narrow with what is certain.** Turn every hard fact in the request into filters before any fuzzy step: sender or recipient, date range (default the last 90 days when the user says "recently" or gives no hint), folder, attachments. Run that search with `-Max 300 -PreviewLength 500 -OutFile "<tmp>/candidates.json"`.
 2. **Keyword expansion** when the topic is fuzzy (no network, no consent needed): rewrite the topic into several likely terms in both languages and add `-AnyOf`. Example: "上次跟供應商談價格的信" -> `-AnyOf "價格","報價","quote","quotation","pricing"`.
 3. **Decide by count** (`Count` in the JSON). The reranker is never the default; it is one branch of this ladder:
 
@@ -75,6 +75,23 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
 5. **Local scan** (the fallback; no network, nothing leaves the machine): read `<tmp>/candidates.json` yourself and judge relevance from `Subject`, `From` and `BodyPreview`. Pick up to 10 that match the request, newest first among equals. Present them with the 2a table and say plainly that no reranker was used and the pick is your own reading of the previews (see reference.md §4). If the previews are not enough to tell, re-run the search with `-IncludeBody` for the 5 most likely and read those. Then, if the answer is still uncertain, ask the user for one more constraint rather than guessing.
 
 Never send full bodies to the gateway (the script only sends previews), and never send candidates the user has not agreed to send.
+
+## Attachments
+
+`outlook_attachments.py` is the same search with attachment filters on top; the rows are attachments, not mails. Copying out uses Outlook's SaveAsFile, which reads the attachment and writes only to the folder the user chose.
+
+```
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Name 合約 -After 2026-06-01
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Ext pptx,xlsx -MinSizeKB 500 -Sort size -Top 20 -AllStores -AllFolders
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -From alice -Ext pdf -SaveTo "C:/Users/<me>/Desktop/from-alice"
+```
+
+All search options apply, plus `-Name` (file name contains), `-Ext`, `-MinSizeKB`, `-Sort date|size|name`, `-Top N`, `-IncludeEmbedded` (inline images, OLE), `-SaveTo <folder>`.
+
+1. "Biggest" = `-Sort size -AllFolders` (add `-AllStores` for PST mail); "from X" = `-From`; "last month" = `-After` / `-Before`.
+2. Run without `-SaveTo` first and show the list (reference.md §5).
+3. **Copying out needs consent**: pass `-SaveTo` only after the user named or agreed to a folder in this conversation; ask with the host's question tool when the request was vague. Report the exact paths written.
+4. Never open, run or render extracted files. Refuse to extract from a mail the phishing check marks 🚨.
 
 ## Settings and memory
 

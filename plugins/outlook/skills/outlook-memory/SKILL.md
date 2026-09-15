@@ -1,6 +1,6 @@
 ---
 name: outlook-memory
-description: Build and maintain the personal memory the Outlook skills use (~/.outlook-skills/memory/<category>/<title>.md with YAML front matter): first-run onboarding that scans the mailbox READ-ONLY and proposes notes about frequent contacts, folders, projects and recurring meetings; "remember" and "forget" requests; listing or searching what is remembered. Use when the user says "remember that Alice is ...", "forget ...", "what do you know about X", "set up my memory", "rebuild memory", or 記住 / 忘掉 / 你記得什麼 / 建立個人化記憶 / 重新掃描信箱.
+description: Manage the plugin's own state, READ-ONLY toward Outlook: personal memory (~/.outlook-skills/memory/<category>/<title>.md with YAML front matter; first-run onboarding that scans the mailbox and proposes notes; remember / forget / what do you know) and settings (working hours, default store and search window, reranker gateway and consent, reply language). Use when the user says "remember that Alice is ...", "forget ...", "what do you know about X", "set up my memory", "set my working hours to ...", "what settings are you using", or 記住 / 忘掉 / 你記得什麼 / 建立個人化記憶 / 設定工作時間 / 目前的設定.
 ---
 
 # outlook-memory
@@ -23,10 +23,10 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" new --category people --title "
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" append "Alice Chen" --body "- 合約由她發起" [--tags contracts]
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" touch "<title>"        # after editing a body by hand
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" remove "<title>"
-python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookOverview.ps1 -Days 180 --out "<tmp>/overview.json"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_overview.py" -Days 180 -OutFile "<tmp>/overview.json"
 ```
 
-`run.py` handles the PowerShell interpreter, execution policy and encoding; never call the .ps1 directly. `settings.py init` and `memory.py init` are the same command.
+All scripts are Python (pywin32 for Outlook). `settings.py init` and `memory.py init` are the same command.
 
 ## 1. First run (onboarding)
 
@@ -38,7 +38,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookOverview.ps1 -Days 180 
    - A "not now" answer means: continue the original task, do not ask again this conversation, and do not create anything.
 2. On "empty only": run `settings.py init`, say where the folders are, continue the original task.
 3. On "build and scan":
-   - `settings.py init`, then run `run.py Get-OutlookOverview.ps1 -Days 180 --out "<tmp>/overview.json"` (add `-Store` from settings, or the .pst store outlook-status showed as holding the mail). It returns counts only, no bodies.
+   - `settings.py init`, then run `outlook_overview.py -Days 180 -OutFile "<tmp>/overview.json"` (add `-Store` from settings, or the .pst store outlook-status showed as holding the mail). It returns counts only, no bodies.
    - Draft notes from the JSON, following reference.md §2 for what each category takes and how to name titles. Aim for quality over quantity: roughly 10 to 25 people, every folder with a clear purpose, 5 to 15 projects/topics, all recurring meetings, and skip newsletters unless the user wants them.
    - Show the draft as a table (title, category, tags, one-line content) and ask with the same question tool: 「全部寫入」/「讓我挑」/「取消」. For "let me pick", ask a multi-select question listing the titles (Zoo Code has no multi-select: list the titles numbered and ask which numbers to keep).
    - Write the approved notes with `memory.py new --source bootstrap`, one call per note. Report how many were written per category and where.
@@ -56,9 +56,24 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/run.py" Get-OutlookOverview.ps1 -Days 180 
 Yes: who someone is (role, address, what they usually write about), what a folder is for, a project's keywords and standing decisions, recurring events and their cadence, the user's preferences (language, working hours, formatting).
 No: mail bodies or quotes longer than one line, attachments, credentials, anything the user declined to keep.
 
+## Settings
+
+Same folders, one file: `settings.json` holds only the keys the user changed; `settings.example.json` lists every key with its default. The working-directory file overrides the user file key by key.
+
+```
+python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show                        # merged settings, source of each key, first_run, memory index
+python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" set <key> <value> [--local]  # dotted keys: working_hours.end 17:30, store 20230731, rerank.auto_consent true
+```
+
+- **"What settings are you using?"**: run `show`, present the table in reference.md §5, and say which file each non-default value comes from.
+- **Change a setting**: confirm key and value in one line, run `set`, show the result. `--local` when the user says "for this project" or a `./.outlook-skills/` folder already exists.
+- **Default store**: when outlook-status shows the mail lives in a .pst, offer `set store "<name>"` so every skill uses it.
+- **Reranker consent**: `rerank.auto_consent true` lets outlook-search skip the per-run confirmation. Only on an explicit ask, and repeat once what will be sent and where.
+- Never store credentials in memory notes; the reranker api key belongs in settings.json or an env var.
+
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-matter schema, per-category guidance, title rules, the onboarding draft table and the list layout.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-matter schema, per-category guidance, title rules, the onboarding draft table, the list layout, and the settings key table.
 
 ## Read-only rules
 
