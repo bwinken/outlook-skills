@@ -74,14 +74,6 @@ updated: 2026-09-14T13:40:05
 - 平常說「記住 …」「忘掉 …」「你記得什麼」即可；相關的事會加進同一個檔案。
 - 不存郵件內文、附件、金鑰；沒同意的不寫。記憶檔含人名與 email，工作目錄是 git repo 時把 `.outlook-skills/` 加進 `.gitignore`。
 
-## Layout
-
-```
-.claude-plugin/marketplace.json   marketplace manifest
-plugins/outlook/                  the plugin (skills + scripts)
-install.py                        builds Claude Desktop zips; can also copy skills into .claude/skills or .agents/skills
-```
-
 ## Roadmap ideas
 
 Not implemented yet, kept here as candidates: follow-up tracker (sent mails with no reply), inbox digest, meeting prep, attachment finder, mail-header phishing triage, rules audit (detect suspicious auto-forward rules), contacts lookup, .pst archive explorer.
