@@ -39,10 +39,14 @@ All scripts are Python (pywin32 for Outlook). `settings.py init` and `memory.py 
 2. On "empty only": run `settings.py init`, say where the folders are, continue the original task.
 3. On "build and scan":
    - `settings.py init`, then run `outlook_overview.py -Days 180 -OutFile "<tmp>/overview.json"` (add `-Store` from settings, or the .pst store outlook-status showed as holding the mail). It returns counts only, no bodies.
-   - Draft notes from the JSON, following reference.md §2 for what each category takes and how to name titles. Aim for quality over quantity: roughly 10 to 25 people, every folder with a clear purpose, 5 to 15 projects/topics, all recurring meetings, and skip newsletters unless the user wants them.
+   - Draft notes from the JSON, following reference.md §2 for what each category takes and how to name titles (delegate this step when the JSON is large; see "Delegating heavy reads"). Aim for quality over quantity: roughly 10 to 25 people, every folder with a clear purpose, 5 to 15 projects/topics, all recurring meetings, and skip newsletters unless the user wants them.
    - Show the draft as a table (title, category, tags, one-line content) and ask with the same question tool: 「全部寫入」/「讓我挑」/「取消」. For "let me pick", ask a multi-select question listing the titles (Zoo Code has no multi-select: list the titles numbered and ask which numbers to keep).
    - Write the approved notes with `memory.py new --source bootstrap`, one call per note. Report how many were written per category and where.
 4. Mention once that `.outlook-skills/` should be in `.gitignore` if the working directory is a git repo.
+
+## Delegating heavy reads
+
+When the host offers subagents (Claude Code's Agent tool, including the Code tab in Claude Desktop) and the overview JSON is large (more than about 30 senders or topics, or the file exceeds ~50 KB), hand the reading to a subagent so the raw data never enters this conversation. Give it: the path of `overview.json`, the contents of reference.md §2 and §3 (categories, what each takes, title rules), the current memory index from `settings.py show` so it does not propose duplicates, and the user's language. Ask it to return the draft table from reference.md §4 (title, category, tags, one-line content) as Markdown, with a one-line count per category and nothing else, no raw records. Anything that needs the user's consent (writing memory, sending candidates to the reranker, copying attachments out) stays in this conversation; a subagent never asks the user and never writes. Without subagents, do the same work here but read only what the step needs.
 
 ## 2. Remember / forget during normal use
 

@@ -72,9 +72,13 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
    - If the script exits non-zero mid-run (gateway error, timeout after its built-in retries, unexpected response), do not retry by hand: tell the user in one line which step failed and go to step 5.
    - Present the top results with their `Score` (see reference.md). Scores are relative; treat anything far below the best hit as noise. Offer to open the best hits with `-IncludeBody` or `outlook-thread`.
 
-5. **Local scan** (the fallback; no network, nothing leaves the machine): read `<tmp>/candidates.json` yourself and judge relevance from `Subject`, `From` and `BodyPreview`. Pick up to 10 that match the request, newest first among equals. Present them with the 2a table and say plainly that no reranker was used and the pick is your own reading of the previews (see reference.md §4). If the previews are not enough to tell, re-run the search with `-IncludeBody` for the 5 most likely and read those. Then, if the answer is still uncertain, ask the user for one more constraint rather than guessing.
+5. **Local scan** (the fallback; no network, nothing leaves the machine; delegate when large, see "Delegating heavy reads"): read `<tmp>/candidates.json` yourself and judge relevance from `Subject`, `From` and `BodyPreview`. Pick up to 10 that match the request, newest first among equals. Present them with the 2a table and say plainly that no reranker was used and the pick is your own reading of the previews (see reference.md §4). If the previews are not enough to tell, re-run the search with `-IncludeBody` for the 5 most likely and read those. Then, if the answer is still uncertain, ask the user for one more constraint rather than guessing.
 
 Never send full bodies to the gateway (the script only sends previews), and never send candidates the user has not agreed to send.
+
+## Delegating heavy reads
+
+When the host offers subagents (Claude Code's Agent tool, including the Code tab in Claude Desktop) and the local scan (step 5) has more than about 50 candidates, hand the reading to a subagent so the raw data never enters this conversation. Give it: the path of `candidates.json`, the user's request verbatim, any matching memory notes (aliases, project keywords) already opened, and reference.md §2a and §4. Ask it to return up to 10 EntryIDs with subject, sender, date and a one-line reason each, ordered by relevance, plus one line on whether the previews were enough to judge and nothing else, no raw records. Anything that needs the user's consent (writing memory, sending candidates to the reranker, copying attachments out) stays in this conversation; a subagent never asks the user and never writes. Without subagents, do the same work here but read only what the step needs.
 
 ## Attachments
 
