@@ -20,6 +20,22 @@
 /plugin update outlook@outlook-skills
 ```
 
+若環境變數設了 `HTTP_PROXY` / `HTTPS_PROXY` 而 add 連不到 GitHub，先讓 GitHub 走直連，再在同一個視窗啟動 Claude Code：
+
+```powershell
+$env:NO_PROXY = "github.com,api.github.com,objects.githubusercontent.com"
+claude
+```
+
+還是不行就只對這個視窗清掉 proxy（不影響其他程式）：
+
+```powershell
+Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY -ErrorAction SilentlyContinue
+claude
+```
+
+cmd 的寫法是 `set HTTP_PROXY=` 和 `set HTTPS_PROXY=`。若是 git 自己設了 proxy，用 `git config --global --unset http.proxy` 與 `--unset https.proxy`。
+
 **Zoo Code**：
 
 ```
