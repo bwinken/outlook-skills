@@ -7,6 +7,10 @@ description: Read and summarise a whole email conversation (thread) from the loc
 
 Read-only conversation reader. Nothing in Outlook is modified.
 
+## Where this runs
+
+Needs Windows with Classic Outlook and a host that executes commands on that same machine (Claude Code, Zoo Code, or Claude Code inside Claude Desktop). In a Claude Desktop chat skill or Cowork the sandbox cannot reach Outlook: say so in one line, and point the user to Claude Code, or to `outlook-open-msg` for .msg/.eml files they export from Outlook.
+
 ## Run
 
 ```

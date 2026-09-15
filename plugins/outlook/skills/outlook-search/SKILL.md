@@ -7,6 +7,10 @@ description: Search the local Windows Outlook (Classic) mailbox READ-ONLY by sen
 
 Read-only mail search through Outlook COM automation. Results are returned as JSON; nothing is marked read, moved or changed.
 
+## Where this runs
+
+Needs Windows with Classic Outlook and a host that executes commands on that same machine (Claude Code, Zoo Code, or Claude Code inside Claude Desktop). In a Claude Desktop chat skill or Cowork the sandbox cannot reach Outlook: say so in one line, and point the user to Claude Code, or to `outlook-open-msg` for .msg/.eml files they export from Outlook.
+
 ## Run
 
 ```

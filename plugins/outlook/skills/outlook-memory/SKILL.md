@@ -7,6 +7,10 @@ description: Build and maintain the personal memory the Outlook skills use (~/.o
 
 Memory lives outside Outlook, in `~/.outlook-skills/memory/` (user level) and optionally `./.outlook-skills/memory/` (working directory, preferred for new notes when it exists). One Markdown file per topic, grouped by category, each with YAML front matter (`title`, `category`, `tags`, `created`, `updated`, `source`). Outlook is only ever read.
 
+## Where this runs
+
+Needs Windows with Classic Outlook and a host that executes commands on that same machine (Claude Code, Zoo Code, or Claude Code inside Claude Desktop). In a Claude Desktop chat skill or Cowork the sandbox cannot reach Outlook: say so in one line, and point the user to Claude Code, or to `outlook-open-msg` for .msg/.eml files they export from Outlook.
+
 ## Commands
 
 ```

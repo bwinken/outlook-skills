@@ -17,6 +17,8 @@ jobs:
           if ($bad) { exit 1 }
       - name: Compile Python scripts
         run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
+      - name: Build Claude Desktop zips
+        run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names
         shell: pwsh
         run: |
