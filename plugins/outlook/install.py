@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Install the Outlook skills into an Agent Skills host other than Claude Code: Zoo Code (the
-community continuation of Roo Code; both read .roo/skills), or any tool that reads .agents/skills/.
+"""Install the Outlook skills by copying them into a skills directory: Zoo Code (.roo/skills),
+Claude Code without the plugin marketplace (~/.claude/skills), or any Agent Skills host (.agents/skills).
 
-Claude Code loads this folder as a plugin and expands ${CLAUDE_PLUGIN_ROOT} itself. Other hosts
-do not know that variable, so this script copies each skills/<name>/ folder to the host's skills
-directory and rewrites ${CLAUDE_PLUGIN_ROOT} to this folder's absolute path. Scripts stay here in
-one place; only SKILL.md and reference.md are copied.
+Claude Code's plugin marketplace expands ${CLAUDE_PLUGIN_ROOT} itself. Plain skill directories do
+not know that variable, so this script copies each skills/<name>/ folder to the target and rewrites
+${CLAUDE_PLUGIN_ROOT} to this folder's absolute path. Scripts stay here in one place; only SKILL.md
+and reference.md are copied.
 
 Usage:
     python install.py                    # default: ~/.roo/skills/<name>/  (Zoo Code, all projects)
-    python install.py --project          # ./.roo/skills/<name>/           (this project only)
-    python install.py --agents           # ~/.agents/skills/<name>/        (Agent Skills standard path; --project for ./)
+    python install.py --claude           # ~/.claude/skills/<name>/        (Claude Code, no marketplace needed)
+    python install.py --agents           # ~/.agents/skills/<name>/        (Agent Skills standard path)
+    python install.py --project          # use ./ instead of ~ for any of the above
     python install.py --dest <dir>       # any directory
     python install.py --uninstall        # remove what a previous run created
     python install.py --dry-run
@@ -32,7 +33,8 @@ def dest_dir(args) -> Path:
     if args.dest:
         return Path(args.dest).expanduser().resolve()
     base = Path.cwd() if args.project else Path.home()
-    return base / (".agents" if args.agents else ".roo") / "skills"
+    host = ".claude" if args.claude else (".agents" if args.agents else ".roo")
+    return base / host / "skills"
 
 
 def rewrite(text: str, root: Path) -> str:
@@ -76,6 +78,7 @@ def uninstall(dest: Path, dry: bool):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--project", action="store_true", help="install under the current directory instead of the home directory")
+    ap.add_argument("--claude", action="store_true", help="Claude Code personal skills: .claude/skills/ (no marketplace)")
     ap.add_argument("--agents", action="store_true", help="use .agents/skills/ instead of .roo/skills/")
     ap.add_argument("--dest", help="explicit skills directory")
     ap.add_argument("--uninstall", action="store_true")
