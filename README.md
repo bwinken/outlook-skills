@@ -24,7 +24,7 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔、這週哪天下午有空 |
 | `outlook-followup` | 誰還沒回我、我還欠誰回信 |
-| `outlook-digest` | 今天有什麼信、未讀摘要、有沒有急事 |
+| `outlook-morning-brief` | 早安今天怎樣、有什麼新信、有沒有急事、今天要處理什麼 |
 | `outlook-meeting-prep` | 幫我準備下一場會議、跟他們最近的往來和附件 |
 | `outlook-attachments` | 找 Alice 寄的合約 PDF、最大的附件、把附件存出來 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |

@@ -11,7 +11,7 @@
     {
       "name": "outlook",
       "source": "./plugins/outlook",
-      "description": "Read-only Outlook (Classic) skills: mail search, thread summaries, agenda and free slots, follow-ups, inbox digest, meeting prep, attachments, .msg/.eml parsing, plus local settings and personal memory. Never modifies the mailbox.",
+      "description": "Read-only Outlook (Classic) skills: mail search, thread summaries, agenda and free slots, follow-ups, morning brief, meeting prep, attachments, .msg/.eml parsing, plus local settings and personal memory. Never modifies the mailbox.",
       "version": "0.3.0",
       "author": {
         "name": "bwinken"

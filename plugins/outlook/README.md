@@ -10,7 +10,7 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 | `outlook-agenda` | What is on the calendar for a date range, recurrences expanded, conflicts and unanswered invites flagged |
 | `outlook-availability` | When the user is free: open slots within working hours, or a slot of a required length |
 | `outlook-followup` | Mails waiting for a reply, in both directions |
-| `outlook-digest` | Inbox triage by urgency for today or this week |
+| `outlook-morning-brief` | Today's meetings, new mail by urgency, replies owed and awaited |
 | `outlook-meeting-prep` | Attendees, recent mail with them, topic thread and attachments before a meeting |
 | `outlook-attachments` | Find, filter, sort attachments; copy out with consent |
 | `outlook-open-msg` | Parse a .msg / .eml file without Outlook (standard library only) |
