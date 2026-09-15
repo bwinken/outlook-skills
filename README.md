@@ -13,6 +13,13 @@
 
 若 add 時出現「its network source differs from the one declared for it in settings」，先 `/plugin marketplace remove outlook-skills` 再重新 add。
 
+更新：
+
+```
+/plugin marketplace update outlook-skills
+/plugin update outlook@outlook-skills
+```
+
 **Zoo Code**：
 
 ```
@@ -20,7 +27,14 @@ git clone https://github.com/bwinken/outlook-skills
 python outlook-skills/install.py
 ```
 
-裝到 `~/.roo/skills/`，所有專案可用。更新後重跑第二行即可；clone 的資料夾不要移動。
+裝到 `~/.roo/skills/`，所有專案可用。clone 的資料夾不要移動。
+
+更新：
+
+```
+git -C outlook-skills pull
+python outlook-skills/install.py
+```
 
 ## Skills
 

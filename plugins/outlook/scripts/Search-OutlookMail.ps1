@@ -64,7 +64,7 @@ if ($AnyOf.Count -gt 0) {
     foreach ($term in $AnyOf) {
         if ([string]::IsNullOrWhiteSpace($term)) { continue }
         $v = ConvertTo-DaslLiteral $term
-        $ors += ""urn:schemas:httpmail:subject" LIKE '%$v%' OR "urn:schemas:httpmail:textdescription" LIKE '%$v%'"
+        $ors += """urn:schemas:httpmail:subject"" LIKE '%$v%' OR ""urn:schemas:httpmail:textdescription"" LIKE '%$v%'"
     }
     if ($ors.Count -gt 0) { $clauses += '(' + ($ors -join ' OR ') + ')' }
 }
