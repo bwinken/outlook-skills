@@ -62,13 +62,12 @@ if (-not $report.OfficeVersion) { $report.Warnings += 'No Classic Outlook regist
 if ($report.NewOutlookEnabled) { $report.Warnings += 'New Outlook toggle is ON. COM automation only works with Classic Outlook.' }
 
 # ---- File system: .pst/.ost in default locations ---------------------------------------
-$candidates = @(
-    (Join-Path $env:LOCALAPPDATA 'Microsoft\Outlook'),
-    (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Outlook Files'),
-    (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Outlook 檔案')
-)
+$candidates = @()
+if ($env:LOCALAPPDATA) { $candidates += (Join-Path $env:LOCALAPPDATA 'Microsoft\Outlook') }
+$docs = [Environment]::GetFolderPath('MyDocuments')
+if ($docs) { $candidates += (Join-Path $docs 'Outlook Files'), (Join-Path $docs 'Outlook 檔案') }
 foreach ($dir in $candidates) {
-    if (Test-Path $dir) {
+    if ($dir -and (Test-Path $dir)) {
         Get-ChildItem -Path $dir -Include *.pst, *.ost -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
             $report.DataFilesOnDisk += [pscustomobject]@{
                 Path      = $_.FullName
