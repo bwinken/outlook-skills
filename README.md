@@ -2,7 +2,7 @@
 
 <p align="center"><b>📚 outlook skills</b>&ensp;|&ensp;<a href="docs/mcp.md">🔌 outlook-mcp</a></p>
 
-讓 Claude 用你本機的 Windows Outlook（Classic）：找信、讀討論串、看行程、找空檔、早安簡報、會前準備、解析 .msg / .eml，以及回信、寄信、約會議。
+讓 Claude 用你本機的 Windows Outlook（Classic）：找信、讀討論串、看行程、找空檔、早安簡報、解析 .msg / .eml，以及回信、寄信、約會議。
 
 讀的部分唯讀；寄信和建立會議要你點兩次：先在對話裡看過草稿說好，再在桌面跳出的確認視窗按一次，才會真的送出。哪個 skill 會寫，見下面功能表。
 
@@ -52,7 +52,6 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 | `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 | 唯讀 |
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔 | 唯讀 |
 | `outlook-morning-brief` | 早安今天怎樣、有沒有急事、誰還沒回我、我還欠誰回信 | 唯讀 |
-| `outlook-meeting-prep` | 幫我準備下一場會議 | 唯讀 |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 | 唯讀（不碰 Outlook） |
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 | 唯讀 |
 | `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間 | 唯讀（只寫自己的設定檔） |

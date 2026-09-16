@@ -18,7 +18,6 @@ python scripts/outlook_search.py -From alice -After 2026-09-01 -Max 20
 python scripts/outlook_thread.py -Subject "Q3 budget"
 python scripts/outlook_calendar.py -Days 7
 python scripts/outlook_followup.py -Direction both
-python scripts/outlook_meeting_prep.py -Next
 python scripts/outlook_send.py draft -ReplyTo <EntryID> -BodyFile body.txt   # then: send <id> -Confirm <token>
 python scripts/outlook_meeting.py draft -Subject "Q3 review" -Start 2026-09-18T14:00 -Attendees alice@contoso.com   # then: send <id> -Confirm <token>
 python scripts/outlook_attachments.py -Ext pdf -Sort size -Top 10
@@ -36,7 +35,6 @@ python scripts/memory.py find alice
 | `outlook_thread.py` | outlook-thread |
 | `outlook_calendar.py` | outlook-agenda, outlook-availability |
 | `outlook_followup.py` | outlook-morning-brief |
-| `outlook_meeting_prep.py` | outlook-meeting-prep |
 | `outlook_send.py` | outlook-send: `draft` stores the exact outgoing text and hashes the attachments, `send` opens the confirmation window and sends after the click |
 | `outlook_meeting.py` | outlook-schedule: same two steps for a meeting or appointment, with an overlap check in the draft |
 | `outlook_overview.py`, `outlook_style.py` | outlook-setup (mailbox scan, reply-habit profile) |

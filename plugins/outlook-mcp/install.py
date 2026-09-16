@@ -20,7 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SERVER = HERE / "server.py"
 NAME = "outlook"
-READ_ONLY_TOOLS = ["search_mail", "get_thread", "list_calendar", "list_followups", "prepare_meeting", "mailbox_overview", "get_status"]
+READ_ONLY_TOOLS = ["search_mail", "get_thread", "list_calendar", "list_followups", "mailbox_overview", "get_status"]
 
 
 def desktop_config_path() -> Path:

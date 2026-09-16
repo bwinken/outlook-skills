@@ -21,7 +21,7 @@ import server  # noqa: E402
 import outlook_com as oc  # noqa: E402  (the mcp copy of scripts/, via server's sys.path)
 import fake_outlook as fo  # noqa: E402
 
-ALL_TOOLS = {"search_mail", "get_thread", "list_calendar", "list_followups", "prepare_meeting", "find_attachments", "mailbox_overview", "get_status", "parse_msg_file"}
+ALL_TOOLS = {"search_mail", "get_thread", "list_calendar", "list_followups", "find_attachments", "mailbox_overview", "get_status", "parse_msg_file"}
 
 
 def rpc(method, params=None, id_=1):
