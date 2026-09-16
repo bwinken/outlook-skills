@@ -21,8 +21,7 @@ import server  # noqa: E402
 import outlook_com as oc  # noqa: E402  (the mcp copy of scripts/, via server's sys.path)
 import fake_outlook as fo  # noqa: E402
 
-ALL_TOOLS = {"search_mail", "get_thread", "list_calendar", "list_followups", "prepare_meeting", "find_attachments", "mailbox_overview", "get_status", "parse_msg_file", "draft_mail", "send_mail"}
-WRITING = {"find_attachments", "parse_msg_file", "draft_mail", "send_mail"}
+ALL_TOOLS = {"search_mail", "get_thread", "list_calendar", "list_followups", "prepare_meeting", "find_attachments", "mailbox_overview", "get_status", "parse_msg_file"}
 
 
 def rpc(method, params=None, id_=1):
@@ -87,10 +86,7 @@ class ProtocolTest(ServerTest):
         for t in tools.values():
             self.assertIs(t["inputSchema"]["additionalProperties"], False)
             self.assertTrue(t["description"])
-            self.assertEqual(t["annotations"]["readOnlyHint"], t["name"] not in WRITING, t["name"])
-        self.assertTrue(tools["send_mail"]["annotations"]["destructiveHint"])
-        self.assertEqual(tools["send_mail"]["inputSchema"]["required"], ["id", "confirm"])
-        self.assertIn("reply_to", tools["draft_mail"]["inputSchema"]["properties"])
+            self.assertEqual(t["annotations"]["readOnlyHint"], t["name"] not in ("find_attachments", "parse_msg_file"), t["name"])
 
 
 class CallTest(ServerTest):
@@ -200,35 +196,6 @@ class RerankTest(ServerTest):
             self.assertIn("No working reranker", out["Rerank"]["Reason"])
             out, err = call("search_mail", query="x", allstores=True)  # cached failure, probe not repeated
             self.assertIn("No working reranker", out["Rerank"]["Reason"])
-
-
-class SendTest(ServerTest):
-    def setUp(self):
-        super().setUp()
-        home = tempfile.mkdtemp()
-        self.env = mock.patch.dict(os.environ, {"HOME": home, "USERPROFILE": home})
-        self.env.start()
-        self.addCleanup(self.env.stop)
-        oc.set_namespace_for_tests(fo.build_fixture(), None)
-        oc.set_namespace_for_tests(oc._namespace, oc._namespace.Application)
-
-    def test_draft_then_send_only_after_the_click(self):
-        d, err = call("draft_mail", reply_to="id6", body="收到，週五前回覆。")
-        self.assertFalse(err, d)
-        self.assertEqual([r["Address"] for r in d["to"]], ["pc.liao@contoso.com"])
-        self.assertIn("approved by Ben", d["full_body"])
-        with mock.patch.object(server.outlook_send, "confirm_dialog", return_value=False):
-            text, err = call("send_mail", id=d["id"], confirm=d["confirm"])
-        self.assertTrue(err and "Cancelled" in text, text)
-        self.assertEqual(oc._application.sent, [])
-        d, err = call("draft_mail", reply_to="id6", body="收到，週五前回覆。")
-        with mock.patch.object(server.outlook_send, "confirm_dialog", return_value=True):
-            out, err = call("send_mail", id=d["id"], confirm=d["confirm"])
-        self.assertFalse(err, out)
-        self.assertTrue(out["Sent"])
-        self.assertEqual(len(oc._application.sent), 1)
-        text, err = call("send_mail", id=d["id"], confirm="nope")
-        self.assertTrue(err)
 
 
 class StdioTest(unittest.TestCase):

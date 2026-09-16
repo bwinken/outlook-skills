@@ -22,7 +22,7 @@ pip install pywin32
 
 **Claude Chat、Cowork、Zoo Code、其他 MCP host**
 
-改裝 MCP 版 `outlook-mcp`，步驟在 [docs/mcp.md](docs/mcp.md)。和 skills 版擇一。
+改裝 MCP 版 `outlook-mcp`，步驟在 [docs/mcp.md](docs/mcp.md)。和 skills 版擇一。MCP 版只讀，沒有寄信。
 
 **Claude Desktop Chat 分頁 / claude.ai 上傳 skill**
 

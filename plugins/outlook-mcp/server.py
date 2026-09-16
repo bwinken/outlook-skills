@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""MCP server for a local Windows Outlook (Classic) mailbox, stdio transport. Every tool reads, except
-draft_mail (writes a draft file) and send_mail (sends, but only after the user clicked Send in a window
-on their desktop).
+"""READ-ONLY MCP server for a local Windows Outlook (Classic) mailbox, stdio transport.
 
 Standard library only (plus pywin32 for Outlook COM). It wraps the same scripts as the `outlook`
 skills plugin: scripts/ next to this file is a verbatim copy of plugins/outlook/scripts kept in
@@ -12,9 +10,9 @@ parser, so the tools cannot drift from the scripts.
     python server.py --list                            # print the tool list and exit, no Outlook access
     python server.py --call search_mail '{"from": "alice", "max": 5}'   # one tool call, for debugging
 
-Nothing else writes to Outlook: no Save, Move, Delete, no property setters, items are never marked
-read. The only files written are the ones the user asks for (find_attachments saveto, parse_msg_file
-extract_to) and draft files under ~/.outlook-skills/drafts. See README.md.
+Nothing here writes to Outlook: no Save, Send, Move, Delete, no property setters, items are never
+marked read. The only files written are the ones the user asks for (find_attachments saveto,
+parse_msg_file extract_to). See README.md.
 """
 import argparse
 import json
@@ -33,7 +31,6 @@ import outlook_followup  # noqa: E402
 import outlook_meeting_prep  # noqa: E402
 import outlook_overview  # noqa: E402
 import outlook_search  # noqa: E402
-import outlook_send  # noqa: E402
 import outlook_status  # noqa: E402
 import outlook_thread  # noqa: E402
 import read_msg  # noqa: E402
@@ -56,12 +53,7 @@ INSTRUCTIONS = (
     "Prefer narrow filters (from, after, anyof) and a small max over includebody. "
     "search_mail accepts a natural-language `query`: when the user configured a reranker gateway "
     "(settings rerank.gateway or OUTLOOK_RERANK_URL) the candidates are reranked by it automatically; "
-    "otherwise the query is ignored and plain substring results are returned (see the Rerank field). "
-    "Sending mail is two steps: draft_mail stores the exact outgoing text and returns id and confirm; show To, Cc, "
-    "Subject and the full text to the user and get their explicit yes on all of it; only then call send_mail, which "
-    "opens a confirmation window on the user's desktop and sends only after they click Send there. Keep drafts short "
-    "and in the user's usual style; never call send_mail before the user agreed in the conversation, never after a cancel "
-    "without asking again."
+    "otherwise the query is ignored and plain substring results are returned (see the Rerank field)."
 )
 
 
@@ -186,15 +178,6 @@ TOOLS = [
     {"name": "parse_msg_file", "parser": read_msg.parser, "run": run_parse_msg, "writes": True, "skip": ("format",),
      "description": "Parse .msg or .eml files on disk without Outlook: subject, addresses, date, body, transport headers (headers=true) and the "
                     "attachment list. extract_to copies the attachments into a folder. Works on any OS."},
-    {"name": "draft_mail", "parser": outlook_send.draft_parser, "run": lambda a, _: outlook_send.run_draft(a), "writes": True,
-     "description": "Step 1 of sending: build a draft (new mail with to + subject, or a reply with reply_to = EntryID, reply_all optional). "
-                    "Recipients are resolved through Outlook; the result holds the exact outgoing text (body + approval footer + quoted "
-                    "original), an id and a confirm token. Sends nothing. Show the whole result to the user and get their yes before step 2."},
-    {"name": "send_mail", "parser": outlook_send.send_parser, "run": lambda a, _: outlook_send.run_send(a), "writes": True,
-     "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
-     "description": "Step 2 of sending: opens a confirmation window on the user's desktop with the draft's To, Cc, Subject and full text; "
-                    "sends only after the user clicks Send there (Cancel or timeout sends nothing and retires the draft). The item is "
-                    "verified against the draft before Send. Call only after the user approved the draft in the conversation."},
 ]
 TOOL_BY_NAME = {t["name"]: t for t in TOOLS}
 _SKIP_DESTS = ("out_file", "help")
@@ -247,7 +230,7 @@ def tool_descriptor(tool) -> dict:
         "name": tool["name"],
         "description": tool["description"],
         "inputSchema": input_schema(tool),
-        "annotations": tool.get("annotations") or {"readOnlyHint": not tool["writes"], "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
+        "annotations": {"readOnlyHint": not tool["writes"], "destructiveHint": False, "idempotentHint": True, "openWorldHint": False},
     }
 
 

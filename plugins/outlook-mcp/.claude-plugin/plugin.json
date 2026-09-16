@@ -1,7 +1,7 @@
 {
   "name": "outlook-mcp",
-  "description": "MCP server for a local Windows Outlook (Classic) mailbox: search mail, read threads, calendar, replies owed and awaited, meeting prep, attachments, .msg/.eml parsing; draft_mail / send_mail send only after the user clicks Send in a desktop window. Never moves, deletes or marks anything. Alternative to the outlook skills plugin; install one or the other.",
-  "version": "0.3.0",
+  "description": "Read-only MCP server for a local Windows Outlook (Classic) mailbox: search mail, read threads, calendar, replies owed and awaited, meeting prep, attachments, .msg/.eml parsing. Never writes, sends, moves or deletes anything. Alternative to the outlook skills plugin; install one or the other.",
+  "version": "0.2.0",
   "author": {
     "name": "bwinken"
   },
@@ -12,7 +12,7 @@
     "mcp",
     "msg",
     "eml",
-    "send"
+    "read-only"
   ],
   "mcpServers": {
     "outlook": {

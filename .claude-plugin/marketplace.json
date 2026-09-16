@@ -4,7 +4,7 @@
     "name": "bwinken"
   },
   "metadata": {
-    "description": "A local Windows Outlook (Classic) mailbox for Claude: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Read search, threads, calendar, follow-ups, meeting prep, .msg/.eml files; send or reply only after the user confirms in a desktop window.",
+    "description": "A local Windows Outlook (Classic) mailbox for Claude: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Read search, threads, calendar, follow-ups, meeting prep, .msg/.eml files; the skills plugin also sends or replies, only after the user confirms in a desktop window; the MCP server stays read-only.",
     "version": "0.8.0"
   },
   "plugins": [
@@ -31,8 +31,8 @@
     {
       "name": "outlook-mcp",
       "source": "./plugins/outlook-mcp",
-      "description": "MCP server over the same Outlook (Classic) scripts: search mail (with optional reranking), threads, calendar, replies owed and awaited, meeting prep, attachments, mailbox overview, .msg/.eml parsing, and draft_mail / send_mail that send only after the user clicks Send in a desktop window. For hosts that want tools instead of skills. Pick this or outlook.",
-      "version": "0.3.0",
+      "description": "Read-only MCP server over the same Outlook (Classic) scripts: search mail (with optional reranking), threads, calendar, replies owed and awaited, meeting prep, attachments, mailbox overview, .msg/.eml parsing. For hosts that want tools instead of skills, including the Claude Desktop Chat tab. Pick this or outlook.",
+      "version": "0.2.0",
       "author": {
         "name": "bwinken"
       },
