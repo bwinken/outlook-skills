@@ -9,15 +9,56 @@
 | Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
+| MCP 版（Chat 分頁可讀本機信箱、其他 MCP host） | 見下方「也有 MCP 版」 | |
 
 Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用（或改用下面的 MCP 版）。
 
 <details>
-<summary><b>🔌 也有 MCP 版</b> — 同一套功能包成 MCP server（Claude Desktop Chat 分頁、其他 MCP host 可用），點開看對應表與安裝方式</summary>
+<summary><b>🔌 也有 MCP 版</b> — 同一套功能包成 MCP server，Claude Desktop Chat 分頁和其他 MCP host 也能讀本機 Outlook。點開看安裝方式與功能對應表</summary>
 
 <br>
 
-`outlook-mcp` 是第二個 plugin，跑的是同一套 Python script、同一份設定、同一條唯讀政策，差別是以 MCP tool 而不是 skill 接到 Claude。**擇一安裝**：兩個都裝也能動，但 MCP 的 tool 會一直佔 context。
+`outlook-mcp` 是這個 marketplace 的第二個 plugin，跑的是同一套 Python script、同一份設定、同一條唯讀政策，差別是以 MCP tool 而不是 skill 接到 Claude。**和 `outlook` 擇一安裝**：兩個都裝也能動，但 MCP 的 tool 會一直佔 context。
+
+### 安裝 MCP
+
+前置：Windows、Classic Outlook、Python 3.8+ 在 PATH 上，然後 `pip install pywin32`。
+
+**Claude Code / Claude Desktop Code 分頁**（走 plugin marketplace）：
+
+```
+/plugin marketplace add bwinken/outlook-skills
+/plugin install outlook-mcp@outlook-skills
+```
+
+更新：`/plugin marketplace update outlook-skills`，再 `/plugin update outlook-mcp@outlook-skills`。
+
+**Claude Desktop Chat 分頁**（Chat 分頁不吃 plugin，要登記到它的 MCP 設定檔）：
+
+1. 把 repo 放到本機，之後不要移動：`git clone https://github.com/bwinken/outlook-skills C:\tools\outlook-skills`（或 GitHub 頁面 Code → Download ZIP 解壓）。
+2. 寫入設定：`python C:\tools\outlook-skills\plugins\outlook-mcp\install.py --claude-desktop`。它會在 `%APPDATA%\Claude\claude_desktop_config.json` 加一個 `outlook` 項目（原檔留 `.bak` 備份）。裝了多個 Python 時加 `--python C:\path\to\python.exe` 指定有 pywin32 的那個。
+3. 完全關閉 Claude Desktop 再開，Chat 分頁的工具列會出現 outlook 的 tool。
+
+更新：到 repo 目錄 `git pull`，重開 Claude Desktop。移除：同一個指令加 `--uninstall`。
+
+**其他 MCP host**（Cursor、VS Code 等）：`python plugins/outlook-mcp/install.py` 不加參數會印出這段，貼進該 host 的 MCP 設定即可：
+
+```json
+{
+  "mcpServers": {
+    "outlook": {
+      "command": "python",
+      "args": ["C:\\tools\\outlook-skills\\plugins\\outlook-mcp\\server.py"]
+    }
+  }
+}
+```
+
+沒有 marketplace 的 Claude Code 也可以：`claude mcp add --scope user outlook -- python "C:\tools\outlook-skills\plugins\outlook-mcp\server.py"`。
+
+檢查有沒有通：`python plugins/outlook-mcp/server.py --call get_status "{}"`，看得到帳號和 store 就是 COM 正常；出現 pywin32 或 Classic Outlook 的錯誤訊息照 [docs/install-troubleshooting.md](docs/install-troubleshooting.md) 處理。
+
+### 功能對應
 
 | Skill | 對應 MCP tool | 差異 |
 |---|---|---|
@@ -31,11 +72,6 @@ Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`�
 | `outlook-open-msg` | `parse_msg_file` | 讀磁碟上的檔案；沒有釣魚信判讀指引 |
 | `outlook-setup` | `mailbox_overview` | 只有掃描統計，沒有設定精靈、不寫記憶 |
 | `outlook-memory` | 無 | 記憶與設定精靈是 skill 專屬；`store` 設定 MCP 會自動套用 |
-
-| Host | 安裝 | 更新 |
-|---|---|---|
-| Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook-mcp@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook-mcp@outlook-skills` |
-| Claude Desktop（Chat 分頁）、其他 MCP host | clone 這個 repo，`python outlook-skills/plugins/outlook-mcp/install.py --claude-desktop`，重開 Claude Desktop | `git pull` |
 
 tool 參數與細節見 [plugins/outlook-mcp/README.md](plugins/outlook-mcp/README.md)。
 
