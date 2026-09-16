@@ -96,4 +96,8 @@ python tools/sync_scripts.py                               # 改了 plugins/outl
 
 ## Roadmap
 
-- 不開 Outlook 直接讀 .pst
+目前只讀。下一步加寫入功能，每個動作都先給你看內容、確認後才執行：
+
+- 寄信
+- 回信
+- 建立會議
