@@ -20,7 +20,8 @@ Two steps, always:
     python outlook_send.py show <id> | list | discard <id>
 
 The token printed by `draft` is a hash of the outgoing content; `send` recomputes it, so a draft file
-edited after it was shown cannot be sent. Attachments are not supported.
+edited after it was shown cannot be sent. Attachments (--attach <file> ...) are recorded with their size
+and SHA-256 at draft time and re-hashed before they are attached; a changed or missing file aborts.
 """
 import datetime as dt
 import hashlib
@@ -65,7 +66,7 @@ def new_id() -> str:
     return dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2)
 
 
-_TOKEN_FIELDS = {"mail": ("to", "cc", "subject", "full_body"),
+_TOKEN_FIELDS = {"mail": ("to", "cc", "subject", "full_body", "attachments"),
                  "meeting": ("required", "optional", "subject", "start", "end", "location", "full_body")}
 
 
@@ -137,6 +138,45 @@ def _dedupe(rows):
 
 def _addresses(rows):
     return sorted(r["Address"].lower() for r in rows)
+
+
+# ---------------------------------------------------------------- attachments
+ATTACH_MAX_MB = 20   # what most mail servers accept in total
+
+
+def _sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def describe_attachments(paths) -> list:
+    out, total = [], 0
+    for raw in paths or []:
+        p = os.path.abspath(os.path.expanduser(raw))
+        if not os.path.isfile(p):
+            raise SystemExit(f"Attachment not found: {raw}")
+        size = os.path.getsize(p)
+        total += size
+        out.append({"Path": p, "Name": os.path.basename(p), "Size": size, "Sha256": _sha256(p)})
+    if total > ATTACH_MAX_MB * 1024 * 1024:
+        raise SystemExit(f"Attachments total {total / 1048576:.1f} MB, over the {ATTACH_MAX_MB} MB limit.")
+    return out
+
+
+def check_attachments(rows):
+    """Before attaching: every file still there and unchanged since the draft was shown."""
+    for a in rows:
+        if not os.path.isfile(a["Path"]):
+            raise SystemExit(f"Attachment missing, nothing was sent: {a['Path']}")
+        if os.path.getsize(a["Path"]) != a["Size"] or _sha256(a["Path"]) != a["Sha256"]:
+            raise SystemExit(f"Attachment changed since the draft was shown, nothing was sent: {a['Path']}")
+
+
+def fmt_attachments(rows) -> str:
+    return "; ".join(f"{a['Name']} ({a['Size'] / 1024:.0f} KB)" if a["Size"] < 1048576 else f"{a['Name']} ({a['Size'] / 1048576:.1f} MB)" for a in rows) or "(none)"
 
 
 # ---------------------------------------------------------------- draft
@@ -225,6 +265,7 @@ def run_draft(a, ns=None):
         "reply_to": reply or None,
         "to": to, "cc": cc, "subject": subject,
         "body": body, "footer": footer, "quote": quote, "full_body": full_body,
+        "attachments": describe_attachments(a.attach),
         "approver": approver,
     }
     d["confirm"] = token(d)
@@ -239,7 +280,8 @@ def fmt_people(rows) -> str:
 
 def mail_dialog_spec(d: dict) -> dict:
     return {"title": "Outlook 確認寄出 / Confirm send",
-            "rows": [("收件者 To", fmt_people(d["to"])), ("副本 Cc", fmt_people(d["cc"])), ("主旨 Subject", d["subject"])],
+            "rows": [("收件者 To", fmt_people(d["to"])), ("副本 Cc", fmt_people(d["cc"])), ("主旨 Subject", d["subject"]),
+                     ("附件 Attachments", fmt_attachments(d.get("attachments") or []))],
             "text": d["full_body"],
             "note": "這封信會以上面的內容原樣寄出，寄出後無法收回。",
             "ok": "寄出 Send", "question": "寄出？ Send this mail?"}
@@ -326,6 +368,10 @@ def _verify(mail, d):
         problems.append("Subject differs")
     if str(mail.Body).replace("\r\n", "\n").rstrip() != d["full_body"].rstrip():
         problems.append("Body differs")
+    want = sorted(a["Name"].lower() for a in d.get("attachments") or [])
+    got = sorted(str(att.FileName).lower() for att in oc._safe(lambda: list(mail.Attachments), []) or [])
+    if got != want:
+        problems.append(f"Attachments differ: item {got} vs draft {want}")
     if problems:
         raise SystemExit("Item does not match the approved draft, nothing was sent: " + "; ".join(problems))
 
@@ -353,11 +399,16 @@ def run_send(a, ns=None):
     except Exception:
         pass
     mail.Body = d["full_body"]
+    atts = d.get("attachments") or []
+    check_attachments(atts)
+    for att in atts:
+        mail.Attachments.Add(att["Path"])
     _verify(mail, d)
     mail.Send()
     d["status"], d["sent_at"] = "sent", dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     save(d)
-    return {"Sent": True, "Id": d["id"], "Mode": d["mode"], "To": d["to"], "Cc": d["cc"], "Subject": d["subject"], "SentAt": d["sent_at"], "Approver": d["approver"]}
+    return {"Sent": True, "Id": d["id"], "Mode": d["mode"], "To": d["to"], "Cc": d["cc"], "Subject": d["subject"],
+            "Attachments": [a["Name"] for a in atts], "SentAt": d["sent_at"], "Approver": d["approver"]}
 
 
 # ---------------------------------------------------------------- other commands
@@ -396,6 +447,7 @@ def draft_parser():
     ap.flag("-ReplyAll", dest="reply_all", help="answer everyone on the original (the user's own addresses excluded)")
     ap.opt("-BodyFile", dest="body_file", default="", help="UTF-8 text file with the body (recommended: no shell quoting issues)")
     ap.opt("-Body", default="", help="body text inline (short bodies only)")
+    ap.opt("-Attach", nargs="+", default=[], help=f"files to attach (paths); recorded with size and SHA-256, re-checked before sending; {ATTACH_MAX_MB} MB total")
     oc.add_common_output(ap)
     return ap
 

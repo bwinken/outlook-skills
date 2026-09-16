@@ -136,6 +136,39 @@ class SendTest(unittest.TestCase):
         self.assertIn("To differs", str(cm.exception))
         self.assertEqual(self.app.sent, [])
 
+    def test_attachments_are_hashed_shown_and_rechecked(self):
+        d1 = tempfile.mkdtemp()
+        f1, f2 = os.path.join(d1, "報價.pdf"), os.path.join(d1, "b.xlsx")
+        Path(f1).write_bytes(b"%PDF-1.4 fake"); Path(f2).write_bytes(b"x" * 2048)
+        with self.assertRaises(SystemExit):
+            self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x", "-Attach", os.path.join(d1, "missing.pdf"))
+        d = self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "見附件。", "-Attach", f1, f2)
+        self.assertEqual([a["Name"] for a in d["attachments"]], ["報價.pdf", "b.xlsx"])
+        self.assertEqual(d["attachments"][1]["Size"], 2048)
+        self.assertEqual(len(d["attachments"][0]["Sha256"]), 64)
+        r, dlg = self.send(d, clicked=True)
+        self.assertIn("報價.pdf (0 KB); b.xlsx (2 KB)", dict(dlg.call_args[0][0]["rows"])["附件 Attachments"])
+        self.assertEqual(r["Attachments"], ["報價.pdf", "b.xlsx"])
+        m = self.app.sent[0]
+        self.assertEqual([(a.FileName, a.PathName) for a in m.Attachments], [("報價.pdf", f1), ("b.xlsx", f2)])
+        # a file changed after the draft was shown: nothing is sent
+        d = self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "見附件。", "-Attach", f1)
+        Path(f1).write_bytes(b"%PDF-1.4 changed")
+        with self.assertRaises(SystemExit) as cm:
+            self.send(d, clicked=True)
+        self.assertIn("changed since the draft", str(cm.exception))
+        self.assertEqual(len(self.app.sent), 1)
+        # the attachment list is part of the token
+        d = self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x")
+        self.assertNotEqual(d["confirm"], self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x", "-Attach", f2)["confirm"])
+        # over the size limit
+        big = os.path.join(d1, "big.bin")
+        with open(big, "wb") as fh:
+            fh.truncate(snd.ATTACH_MAX_MB * 1024 * 1024 + 1)
+        with self.assertRaises(SystemExit) as cm:
+            self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x", "-Attach", big)
+        self.assertIn("MB limit", str(cm.exception))
+
     def test_list_show_discard(self):
         d = self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x")
         lst = snd.run_list(None)

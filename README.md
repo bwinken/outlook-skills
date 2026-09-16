@@ -53,7 +53,7 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔 |
 | `outlook-morning-brief` | 早安今天怎樣、有沒有急事、誰還沒回我、我還欠誰回信 |
 | `outlook-meeting-prep` | 幫我準備下一場會議 |
-| `outlook-send` | 回他說好、幫我回這封、寄信給 Alice 說會議改週四（短信、照你的寫信習慣，兩次確認才寄） |
+| `outlook-send` | 回他說好、幫我回這封、把桌面上的報價單寄給 Alice（短信、照你的寫信習慣、可帶附件，兩次確認才寄） |
 | `outlook-schedule` | 幫我約 Cassie 週四下午開會、發個邀請、把週五早上擋起來（先看撞期，兩次確認才建立） |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
