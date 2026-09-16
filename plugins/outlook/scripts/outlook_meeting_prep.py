@@ -22,10 +22,10 @@ def _keywords(subject: str):
 
 
 def _find_appointment(a, ns):
-    cal_args = outlook_calendar.parser().parse_args(["-Days", str(a.horizon)] + (["-Store", a.store] if a.store else []))
     if a.entryid:
         it = ns.GetItemFromID(a.entryid)
         return oc.appointment_summary(it), it
+    cal_args = outlook_calendar.parser().parse_args(["-Days", str(a.horizon)] + (["-Store", a.store] if a.store else []))
     cal = outlook_calendar.run(cal_args, ns)
     now = dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     cands = cal["Items"]
@@ -67,12 +67,7 @@ def run(a, ns=None):
     kws = _keywords(appt["Subject"])
     about = [m for m in (search(["-AnyOf", ",".join(kws)]) if kws else []) if m["EntryID"] not in seen]
     attachments = []
-    for grp in by_attendee:
-        for m in grp["Mails"]:
-            for at in m["Attachments"]:
-                if int(at.get("Type", 1)) == 1:
-                    attachments.append({"FileName": at["FileName"], "SizeKB": round(at["Size"] / 1024, 1), "From": m["From"], "ReceivedTime": m["ReceivedTime"], "Subject": m["Subject"], "EntryID": m["EntryID"]})
-    for m in about:
+    for m in [m for grp in by_attendee for m in grp["Mails"]] + about:
         for at in m["Attachments"]:
             if int(at.get("Type", 1)) == 1:
                 attachments.append({"FileName": at["FileName"], "SizeKB": round(at["Size"] / 1024, 1), "From": m["From"], "ReceivedTime": m["ReceivedTime"], "Subject": m["Subject"], "EntryID": m["EntryID"]})

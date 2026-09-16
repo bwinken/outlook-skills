@@ -38,7 +38,8 @@ import rerank  # noqa: E402
 import settings as ps  # noqa: E402
 
 SERVER_NAME = "outlook"
-SERVER_VERSION = "0.1.0"
+with open(os.path.join(HERE, ".claude-plugin", "plugin.json"), encoding="utf-8") as _fh:
+    SERVER_VERSION = json.load(_fh)["version"]  # one version, kept in plugin.json
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")  # newest first; the client's choice is echoed when known
 
 INSTRUCTIONS = (
@@ -159,7 +160,8 @@ TOOLS = [
                     "response status per meeting. Items marked Free are left out unless includefree. Use for agendas and for computing free slots."},
     {"name": "list_followups", "parser": outlook_followup.parser, "run": lambda a, _: outlook_followup.run(a), "writes": False,
      "description": "Mails waiting for a reply. direction=sent: the user wrote and nobody answered for `days` (default 3). "
-                    "direction=received: someone wrote to the user and the user has not answered (default 2 days); LooksLikeQuestion flags requests."},
+                    "direction=received: someone wrote to the user and the user has not answered (default 2 days); LooksLikeQuestion flags requests. "
+                    "direction=both: one scan, both lists under Sent and Received."},
     {"name": "prepare_meeting", "parser": outlook_meeting_prep.parser, "run": lambda a, _: outlook_meeting_prep.run(a), "writes": False,
      "description": "Briefing before a meeting: the appointment, its attendees, recent mail exchanged with each attendee, mail about the "
                     "meeting's subject and attachments seen along the way. Default: the next upcoming meeting; or subject / entryid."},

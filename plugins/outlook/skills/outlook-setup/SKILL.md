@@ -54,4 +54,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-setup/reference.md` for the exact wor
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Outlook is only read. Nothing under `~/.outlook-skills/` is written without a yes in a question dialog. Remind the user once to add `.outlook-skills/` to `.gitignore` when the working directory is a git repo.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Outlook is only read. Nothing under `~/.outlook-skills/` is written without a yes in a question dialog. Remind the user once to add `.outlook-skills/` to `.gitignore` when the working directory is a git repo.

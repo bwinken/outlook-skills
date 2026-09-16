@@ -235,7 +235,7 @@ def cmd_profile(args):
 
 
 def cmd_path(args):
-    _, _, _, _, ld = resolve()
+    _, _, _, ld = resolve()
     print(json.dumps({"user_dir": str(user_dir()), "local_dir": str(ld) if ld else None}, ensure_ascii=False))
 
 

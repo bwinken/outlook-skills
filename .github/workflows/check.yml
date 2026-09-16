@@ -11,16 +11,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Compile
-        run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py plugins/outlook-mcp/server.py plugins/outlook-mcp/install.py tools
-      - name: Script tests against the fake Outlook object model
-        run: python plugins/outlook/tests/test_scripts.py
-      - name: .msg parser against real samples
-        run: python plugins/outlook/tests/test_msgfile.py
+      - name: Lint (ruff, pyflakes rules)
+        run: pip install ruff && ruff check .
       - name: MCP scripts copy matches plugins/outlook/scripts
         run: python tools/sync_scripts.py --check
+      - uses: actions/cache@v4
+        with:
+          path: plugins/outlook/tests/.samples
+          key: msg-samples-v1
+      - name: Script tests (fake Outlook), settings, .msg parser
+        run: python -m unittest discover -s plugins/outlook/tests -v
       - name: MCP server tests (fake Outlook in-process, then over stdio)
-        run: python plugins/outlook-mcp/tests/test_server.py
+        run: python -m unittest discover -s plugins/outlook-mcp/tests -v
       - name: Build Claude Desktop zips
         run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names

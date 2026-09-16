@@ -115,7 +115,12 @@ def _match(it, filt):
         def repl_eq(m):
             field, val = m.group(1), m.group(2).strip("'")
             return "True" if str(_field(it, field)) == val else "False"
+        def repl_date(m):
+            field, op, val = m.group(1), m.group(2), _jet(m.group(3))
+            have = _field(it, field)
+            return str({">=": have >= val, "<": have < val, ">": have > val, "<=": have <= val}[op])
         g = re.sub(r'"([^"]+)"\s+LIKE\s+\'([^\']*(?:\'\'[^\']*)*)\'', repl_like, f)
+        g = re.sub(r'"(urn:schemas:httpmail:datereceived)"\s*(>=|<=|<|>)\s*\'([^\']*)\'', repl_date, g)
         g = re.sub(r'"([^"]+)"\s*=\s*(\'[^\']*\'|\d+)', repl_eq, g)
         g = g.replace(" AND ", " and ").replace(" OR ", " or ")
         return eval(g)
@@ -142,6 +147,7 @@ def _field(it, field):
         "urn:schemas:httpmail:subject": it.Subject, "urn:schemas:httpmail:textdescription": it.Body,
         "urn:schemas:httpmail:hasattachment": 1 if it.Attachments else 0, "urn:schemas:httpmail:read": 0 if it.UnRead else 1,
         "urn:schemas:httpmail:thread-topic": it.ConversationTopic,
+        "urn:schemas:httpmail:datereceived": it.ReceivedTime,
         "urn:schemas:httpmail:importance": it.Importance,
         "http://schemas.microsoft.com/mapi/proptag/0x10900003": it.FlagStatus,
     }[field]

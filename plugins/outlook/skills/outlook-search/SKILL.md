@@ -112,4 +112,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-search/reference.md` before presentin
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Do not open items with `Display()`, do not change `UnRead`, do not move or delete. If the user asks to act on a mail (reply, delete, flag), explain that this plugin only reads and let them do it in Outlook.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Do not open items with `Display()`, do not change `UnRead`, do not move or delete. If the user asks to act on a mail (reply, delete, flag), explain that this plugin only reads and let them do it in Outlook.

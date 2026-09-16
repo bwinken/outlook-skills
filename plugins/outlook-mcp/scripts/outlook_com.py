@@ -253,6 +253,19 @@ def iter_items(items):
         item = items.GetNext()
 
 
+def iter_mail(items):
+    """iter_items, mail items only (meeting requests, reports and other classes are skipped)."""
+    for item in iter_items(items):
+        if int(_safe(lambda: item.Class, 0)) == OL_MAIL_ITEM:
+            yield item
+
+
+def dasl_date(d: dt.datetime) -> str:
+    """Date literal for a DASL (@SQL=) filter, ISO form (locale-independent in practice; outlook_search
+    falls back to filtering dates in Python if a store rejects it)."""
+    return d.strftime("%Y-%m-%d %H:%M")
+
+
 def my_addresses(ns=None):
     """Lower-cased SMTP addresses that count as 'me' (all accounts + current user)."""
     ns = ns or connect()
@@ -271,9 +284,8 @@ def my_addresses(ns=None):
     return out
 
 
-def is_me(address: str, name: str, me: set) -> bool:
-    a = (address or "").lower()
-    return a in me
+def is_me(address: str, me: set) -> bool:
+    return (address or "").lower() in me
 
 
 def appointment_attendees(appt):
@@ -347,7 +359,9 @@ def _safe(getter, default=None):
 
 
 def mail_summary(mail, include_body: bool = False, preview_length: int = 200) -> dict:
-    body = _safe(lambda: str(mail.Body), "") or ""
+    """Body is the most expensive property to read over COM; it is fetched only when a preview or the
+    full body was asked for (preview_length 0 and include_body False skips it)."""
+    body = (_safe(lambda: str(mail.Body), "") or "") if (include_body or preview_length > 0) else ""
     preview = (body[:preview_length] + "...") if len(body) > preview_length else body
     attachments = attachment_list(mail)
     obj = {

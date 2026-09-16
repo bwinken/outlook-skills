@@ -68,7 +68,7 @@ def install(dest: Path, dry: bool):
 
 def build_zips(outdir: Path):
     """One zip per skill with the skill folder as the zip root, the shared scripts copied into
-    <skill>/scripts/, the plugin README as <skill>/README.md, and paths rewritten to be relative.
+    <skill>/scripts/, README.md and POLICY.md beside it, and paths rewritten to be relative.
     This is the layout Claude Desktop / claude.ai expect for an uploaded custom skill."""
     outdir.mkdir(parents=True, exist_ok=True)
     scripts = HERE / "scripts"
@@ -87,14 +87,16 @@ def build_zips(outdir: Path):
                     text = text.replace(f"{VAR}/skills/", "../")
                     text = text.replace(f"{VAR}/scripts/", "scripts/")
                     text = text.replace(f"{VAR}/README.md", "README.md")
+                    text = text.replace(f"{VAR}/POLICY.md", "POLICY.md")
                     text = text.replace(VAR, ".")
                     data = text.encode("utf-8")
                 z.writestr(f"{skill.name}/{f.name}", data)
             for sf in sorted(scripts.iterdir()):
-                if sf.is_file() and sf.suffix.lower() in (".ps1", ".py"):
+                if sf.is_file() and sf.suffix.lower() == ".py":
                     z.write(sf, f"{skill.name}/scripts/{sf.name}")
-            if readme.is_file():
-                z.write(readme, f"{skill.name}/README.md")
+            for doc in (readme, HERE / "POLICY.md"):
+                if doc.is_file():
+                    z.write(doc, f"{skill.name}/{doc.name}")
         built.append(str(zpath))
     return built
 

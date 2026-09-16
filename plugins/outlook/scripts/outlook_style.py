@@ -45,11 +45,9 @@ def _scan(folder, since, cap, recurse=True):
     for f in folders:
         items = f.Items
         items.Sort("[ReceivedTime]", True)
-        for m in oc.iter_items(items):
+        for m in oc.iter_mail(items):
             if len(out) >= cap:
                 return out
-            if int(oc._safe(lambda: m.Class, 0)) != oc.OL_MAIL_ITEM:
-                continue
             if oc.to_datetime(m.ReceivedTime) < since:
                 break
             out.append(m)

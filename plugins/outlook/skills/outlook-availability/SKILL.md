@@ -50,4 +50,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-availability/reference.md` before pre
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never create, accept, decline, move or delete appointments. Suggested times are given in chat only; the user books them in Outlook.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never create, accept, decline, move or delete appointments. Suggested times are given in chat only; the user books them in Outlook.

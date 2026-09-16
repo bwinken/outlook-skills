@@ -5,7 +5,7 @@ description: Morning brief from the local Outlook (Classic) mailbox, READ-ONLY -
 
 # outlook-morning-brief
 
-Read-only. Composes three existing scripts into one briefing; nothing is marked read or changed.
+Read-only. Composes three scripts into one briefing (three runs for the full brief); nothing is marked read or changed.
 
 ## Where this runs
 
@@ -16,8 +16,7 @@ Needs Windows with Classic Outlook and a host that executes commands on that sam
 ```
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_calendar.py"                                          # today's agenda
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_search.py" -Unread -After <since> -PreviewLength 400 -Max 200 [-Store X | -AllStores] [-AllFolders]
-python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction received [-Store X | -AllStores]
-python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction sent [-Store X | -AllStores]
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction both [-Store X | -AllStores]      # owed and awaited from one scan
 ```
 
 Add `-HighImportance` or `-Flagged` searches when the user asks for "urgent" or "flagged" even if already read.
@@ -40,7 +39,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction sent      
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction received  # they asked, I did not answer (default: older than 2 days)
 ```
 
-Options: `-Days N` minimum age before a mail counts as waiting; `-Lookback N` days scanned (default 60); `-Store` / `-AllStores`; `-QuestionsOnly` (received) keeps only mails that look like a question; `-Max`, `-PreviewLength`, `-OutFile`.
+`-Direction both` returns both lists from one scan, under `Sent` and `Received`. Options: `-Days N` minimum age before a mail counts as waiting; `-Lookback N` days scanned (default 60); `-Store` / `-AllStores`; `-QuestionsOnly` (received) keeps only mails that look like a question; `-Max`, `-PreviewLength`, `-OutFile`.
 
 A mail counts as answered when a later mail in the same conversation comes from the other side, within Inbox and Sent Items. Replies given by phone or chat, or filed elsewhere by a rule, are not seen: say so when the list looks wrong. For **received**, use `LooksLikeQuestion` and `DirectToMe` plus the preview to separate real asks from FYI mails. Present with the stand-alone templates in reference.md §4. Offer read-only next steps: open the thread, or draft a nudge in chat. Never send.
 
@@ -54,4 +53,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-morning-brief/reference.md` for the r
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never mark read, flag, reply, accept, decline, move or delete. Drafts, if asked for, are written in chat only.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never mark read, flag, reply, accept, decline, move or delete. Drafts, if asked for, are written in chat only.

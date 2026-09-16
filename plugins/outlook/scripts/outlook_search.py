@@ -8,8 +8,15 @@
 import outlook_com as oc
 
 
-def build_dasl(a) -> str:
+def build_dasl(a, after=None, before=None) -> str:
     c = []
+    # date bounds go into the filter so Outlook applies them with its index instead of the loop below
+    # walking every newer item; the loop checks the dates too, and run() retries without them if a
+    # store rejects the literal
+    if after:
+        c.append(f'"urn:schemas:httpmail:datereceived" >= \'{oc.dasl_date(after)}\'')
+    if before:
+        c.append(f'"urn:schemas:httpmail:datereceived" < \'{oc.dasl_date(before)}\'')
     if a.from_:
         v = oc.dasl_literal(a.from_)
         c.append(f'("urn:schemas:httpmail:fromname" LIKE \'%{v}%\' OR "urn:schemas:httpmail:fromemail" LIKE \'%{v}%\')')
@@ -57,9 +64,9 @@ def resolve_folders(a, ns):
 
 def run(a, ns=None):
     ns = ns or oc.connect()
-    dasl = build_dasl(a)
     after = oc.parse_date(a.after) if a.after else None
     before = oc.parse_date(a.before) if a.before else None
+    dasl = build_dasl(a, after, before)
     folders = resolve_folders(a, ns)
     results = []
     for f in folders:
@@ -67,13 +74,18 @@ def run(a, ns=None):
             break
         items = f.Items
         if dasl:
-            items = items.Restrict(dasl)
+            try:
+                items = items.Restrict(dasl)
+            except Exception:
+                if not (after or before):
+                    raise
+                dasl = build_dasl(a)  # this store did not take the date literal: filter dates in the loop only
+                if dasl:
+                    items = items.Restrict(dasl)
         items.Sort("[ReceivedTime]", True)  # newest first
-        for item in oc.iter_items(items):
+        for item in oc.iter_mail(items):
             if len(results) >= a.max:
                 break
-            if int(oc._safe(lambda: item.Class, 0)) != oc.OL_MAIL_ITEM:
-                continue
             rt = oc.to_datetime(item.ReceivedTime)
             if after and rt < after:
                 break  # sorted desc: nothing older will match

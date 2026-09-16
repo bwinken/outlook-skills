@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Read-only access to a local Windows Outlook (Classic) mailbox: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Status, search, threads, calendar, follow-ups, meeting prep, .msg/.eml files.",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "plugins": [
     {
       "name": "outlook",
       "source": "./plugins/outlook",
       "description": "Read-only Outlook (Classic) skills: guided setup, search (with attachments and fuzzy reranking), thread summaries, agenda and free slots, morning brief with follow-ups, meeting prep, .msg/.eml parsing, and a local memory with settings and a reply-habit profile. Never modifies the mailbox. Pick this or outlook-mcp.",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "author": {
         "name": "bwinken"
       },
@@ -32,7 +32,7 @@
       "name": "outlook-mcp",
       "source": "./plugins/outlook-mcp",
       "description": "Read-only MCP server over the same Outlook (Classic) scripts: search mail (with optional reranking), threads, calendar, replies owed and awaited, meeting prep, attachments, mailbox overview, .msg/.eml parsing. For hosts that want tools instead of skills, including the Claude Desktop Chat tab. Pick this or outlook.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "bwinken"
       },
