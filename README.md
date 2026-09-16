@@ -1,5 +1,7 @@
 # outlook-skills
 
+<p align="center"><b>📚 outlook skills</b>&ensp;|&ensp;<a href="docs/mcp.md">🔌 outlook-mcp</a></p>
+
 **Read-only** skills for a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace.
 
 ## Install
@@ -9,73 +11,9 @@
 | Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
-| MCP 版（Chat 分頁可讀本機信箱、其他 MCP host） | 見下方「也有 MCP 版」 | |
+| MCP 版（Claude Chat、Cowork、Zoo Code、其他 MCP host） | 見 [docs/mcp.md](docs/mcp.md)，同一套功能包成 MCP server，和 skills 擇一 | |
 
-Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用（或改用下面的 MCP 版）。
-
-<details>
-<summary><b>🔌 也有 MCP 版</b> — 同一套功能包成 MCP server，Claude Desktop Chat 分頁和其他 MCP host 也能讀本機 Outlook。點開看安裝方式與功能對應表</summary>
-
-<br>
-
-`outlook-mcp` 是這個 marketplace 的第二個 plugin，跑的是同一套 Python script、同一份設定、同一條唯讀政策，差別是以 MCP tool 而不是 skill 接到 Claude。**和 `outlook` 擇一安裝**：兩個都裝也能動，但 MCP 的 tool 會一直佔 context。
-
-### 安裝 MCP
-
-前置：Windows、Classic Outlook、Python 3.8+ 在 PATH 上，然後 `pip install pywin32`。
-
-**Claude Code / Claude Desktop Code 分頁**（走 plugin marketplace）：
-
-```
-/plugin marketplace add bwinken/outlook-skills
-/plugin install outlook-mcp@outlook-skills
-```
-
-更新：`/plugin marketplace update outlook-skills`，再 `/plugin update outlook-mcp@outlook-skills`。
-
-**Claude Desktop Chat 分頁**（Chat 分頁不吃 plugin，要登記到它的 MCP 設定檔）：
-
-1. 把 repo 放到本機，之後不要移動：`git clone https://github.com/bwinken/outlook-skills C:\tools\outlook-skills`（或 GitHub 頁面 Code → Download ZIP 解壓）。
-2. 寫入設定：`python C:\tools\outlook-skills\plugins\outlook-mcp\install.py --claude-desktop`。它會在 `%APPDATA%\Claude\claude_desktop_config.json` 加一個 `outlook` 項目（原檔留 `.bak` 備份）。裝了多個 Python 時加 `--python C:\path\to\python.exe` 指定有 pywin32 的那個。
-3. 完全關閉 Claude Desktop 再開，Chat 分頁的工具列會出現 outlook 的 tool。
-
-更新：到 repo 目錄 `git pull`，重開 Claude Desktop。移除：同一個指令加 `--uninstall`。
-
-**其他 MCP host**（Cursor、VS Code 等）：`python plugins/outlook-mcp/install.py` 不加參數會印出這段，貼進該 host 的 MCP 設定即可：
-
-```json
-{
-  "mcpServers": {
-    "outlook": {
-      "command": "python",
-      "args": ["C:\\tools\\outlook-skills\\plugins\\outlook-mcp\\server.py"]
-    }
-  }
-}
-```
-
-沒有 marketplace 的 Claude Code 也可以：`claude mcp add --scope user outlook -- python "C:\tools\outlook-skills\plugins\outlook-mcp\server.py"`。
-
-檢查有沒有通：`python plugins/outlook-mcp/server.py --call get_status "{}"`，看得到帳號和 store 就是 COM 正常；出現 pywin32 或 Classic Outlook 的錯誤訊息照 [docs/install-troubleshooting.md](docs/install-troubleshooting.md) 處理。
-
-### 功能對應
-
-| Skill | 對應 MCP tool | 差異 |
-|---|---|---|
-| `outlook-status` | `get_status` | 相同 |
-| `outlook-search` | `search_mail`、`find_attachments` | 模糊搜尋：設定有填 `rerank.gateway` 就自動 rerank，不逐次問；沒填就只有子字串搜尋 |
-| `outlook-thread` | `get_thread` | 相同 |
-| `outlook-agenda` | `list_calendar` | 相同 |
-| `outlook-availability` | `list_calendar` | 空檔由模型從行事曆算，沒有 skill 裡的計算規則 |
-| `outlook-morning-brief` | `list_calendar` + `search_mail` + `list_followups` | 沒有簡報流程，模型自己組合 |
-| `outlook-meeting-prep` | `prepare_meeting` | 相同 |
-| `outlook-open-msg` | `parse_msg_file` | 讀磁碟上的檔案；沒有釣魚信判讀指引 |
-| `outlook-setup` | `mailbox_overview` | 只有掃描統計，沒有設定精靈、不寫記憶 |
-| `outlook-memory` | 無 | 記憶與設定精靈是 skill 專屬；`store` 設定 MCP 會自動套用 |
-
-tool 參數與細節見 [plugins/outlook-mcp/README.md](plugins/outlook-mcp/README.md)。
-
-</details>
+Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用，或改裝 [MCP 版](docs/mcp.md)。
 
 裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 
@@ -122,7 +60,7 @@ All skills only read. They never send, save, move, delete, flag or mark anything
 
 用 `outlook-memory` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
 
-`outlook-mcp` 讀同一份設定：`store` 會自動套到每個 tool；`rerank.gateway` 有填時 `search_mail` 帶 `query` 就自動 rerank（不逐次問，填了就算同意），沒填就回一般子字串搜尋結果。
+MCP 版讀同一份設定，`store` 自動套用、`rerank.gateway` 有填就自動 rerank，見 [docs/mcp.md](docs/mcp.md)。
 
 ## 記憶
 

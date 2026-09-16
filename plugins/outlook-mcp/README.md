@@ -25,37 +25,13 @@ server derives each input schema from that script's argparse parser, so `python 
 
 ## Install
 
-**Claude Code** (plugin marketplace):
+Per-client steps (Claude Code, Claude Chat / Cowork connector form, Zoo Code, other MCP hosts) are in
+[docs/mcp.md](../../docs/mcp.md). In short:
 
-```
-pip install pywin32
-/plugin marketplace add bwinken/outlook-skills
-/plugin install outlook-mcp@outlook-skills
-```
-
-**Claude Desktop, Chat tab** (or any MCP host that runs a stdio server): clone or download this repo, then
-
-```
-python <repo>/plugins/outlook-mcp/install.py --claude-desktop
-```
-
-writes the `outlook` entry into `%APPDATA%\Claude\claude_desktop_config.json` (backup kept; `--uninstall` removes it). Without the flag it
-only prints the snippet, which is:
-
-```json
-{
-  "mcpServers": {
-    "outlook": {
-      "command": "python",
-      "args": ["C:\\path\\to\\outlook-skills\\plugins\\outlook-mcp\\server.py"]
-    }
-  }
-}
-```
-
-`--python C:/path/to/python.exe` picks the interpreter that has pywin32 when several are installed. Restart Claude Desktop afterwards.
-
-**Claude Code without the marketplace**: `claude mcp add --scope user outlook -- python "<repo>/plugins/outlook-mcp/server.py"`.
+- **Claude Code**: `/plugin marketplace add bwinken/outlook-skills`, then `/plugin install outlook-mcp@outlook-skills`.
+- **Everything else**: clone the repo, run `python plugins/outlook-mcp/install.py`; it prints the absolute paths to fill in
+  (the Connectors "Local command (stdio)" form, a `mcpServers` JSON snippet, the `claude mcp add` command).
+  `--claude-desktop` merges the entry into an older Claude Desktop's `claude_desktop_config.json`.
 
 ## Requirements
 
