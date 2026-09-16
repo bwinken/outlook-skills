@@ -12,21 +12,30 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile
-        run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py
+        run: python -m compileall -q plugins/outlook/scripts plugins/outlook/install.py install.py plugins/outlook-mcp/server.py plugins/outlook-mcp/install.py tools
       - name: Script tests against the fake Outlook object model
         run: python plugins/outlook/tests/test_scripts.py
       - name: .msg parser against real samples
         run: python plugins/outlook/tests/test_msgfile.py
+      - name: MCP scripts copy matches plugins/outlook/scripts
+        run: python tools/sync_scripts.py --check
+      - name: MCP server tests (fake Outlook in-process, then over stdio)
+        run: python plugins/outlook-mcp/tests/test_server.py
       - name: Build Claude Desktop zips
         run: python plugins/outlook/install.py --zip dist
       - name: Validate manifests and skill names
         shell: python
         run: |
           import json, re, pathlib
-          json.load(open(".claude-plugin/marketplace.json", encoding="utf-8"))
-          json.load(open("plugins/outlook/.claude-plugin/plugin.json", encoding="utf-8"))
+          mp = json.load(open(".claude-plugin/marketplace.json", encoding="utf-8"))
+          assert [p["name"] for p in mp["plugins"]] == ["outlook", "outlook-mcp"], mp["plugins"]
+          for entry in mp["plugins"]:
+              pj = json.load(open(pathlib.Path(entry["source"]) / ".claude-plugin" / "plugin.json", encoding="utf-8"))
+              assert pj["name"] == entry["name"] and pj["version"] == entry["version"], (entry["name"], pj["version"], entry["version"])
           for d in pathlib.Path("plugins/outlook/skills").iterdir():
               if d.is_dir():
                   name = re.search(r"^name: (\S+)", (d / "SKILL.md").read_text(encoding="utf-8"), re.M).group(1)
                   assert name == d.name, f"{name} != {d.name}"
+          mcp = json.load(open("plugins/outlook-mcp/.claude-plugin/plugin.json", encoding="utf-8"))
+          assert "outlook" in mcp["mcpServers"] and not pathlib.Path("plugins/outlook-mcp/skills").exists()
           print("manifests and skill names OK")

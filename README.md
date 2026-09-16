@@ -1,6 +1,6 @@
 # outlook-skills
 
-**Read-only** skills for a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace.
+**Read-only** access to a local Windows Outlook (Classic) mailbox, packaged as a Claude Code plugin marketplace with two plugins: `outlook` (skills) and `outlook-mcp` (an MCP server over the same scripts). Install one or the other.
 
 ## Install
 
@@ -9,8 +9,24 @@
 | Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook@outlook-skills` |
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
+| **MCP**：Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook-mcp@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook-mcp@outlook-skills` |
+| **MCP**：Claude Desktop（Chat 分頁）、其他 MCP host | clone 這個 repo，`python outlook-skills/plugins/outlook-mcp/install.py --claude-desktop`，重開 Claude Desktop | `git pull` |
 
-Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用。
+以 skill 上傳到 Chat 分頁或 Cowork 時碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用。要在 Chat 分頁讀本機信箱，改裝 MCP（上表最後一列）。
+
+## Skills 還是 MCP？
+
+兩個 plugin 跑的是同一套 Python script、同一份設定、同一條唯讀政策，差在怎麼接到 Claude：
+
+| | `outlook`（skills） | `outlook-mcp`（MCP server） |
+|---|---|---|
+| 適合 | Claude Code、Claude Desktop Code 分頁 | Claude Desktop Chat 分頁、Claude Code、任何 MCP host |
+| 載入方式 | 請求符合時才載入該 skill，含詳細流程與輸出格式指引 | session 開始就啟動一個 Python 程序，九個 tool 常駐在 context |
+| 記憶（人名、資料夾別名）、設定精靈、晨間簡報流程 | 有 | 沒有；只有 tool，判斷交給模型 |
+| 模糊搜尋（reranker） | 每次先問你同意才送 | 設定裡有填 `rerank.gateway` 就自動用，不再問 |
+| 安裝 | `/plugin install outlook@outlook-skills` | `/plugin install outlook-mcp@outlook-skills`，或 `install.py --claude-desktop` |
+
+一般用 Claude Code 的人裝 `outlook` 就好。想在 Chat 分頁用、或 host 不支援 skills，才裝 `outlook-mcp`。兩個都裝也能動，但 MCP 的 tool 會一直佔 context。工具說明見 [plugins/outlook-mcp/README.md](plugins/outlook-mcp/README.md)。
 
 裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 
@@ -56,6 +72,8 @@ All skills only read. They never send, save, move, delete, flag or mark anything
 | `language` | zh-TW | 回覆語言 |
 
 用 `outlook-memory` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
+
+`outlook-mcp` 讀同一份設定：`store` 會自動套到每個 tool；`rerank.gateway` 有填時 `search_mail` 帶 `query` 就自動 rerank（不逐次問，填了就算同意），沒填就回一般子字串搜尋結果。
 
 ## 記憶
 

@@ -4,15 +4,15 @@
     "name": "bwinken"
   },
   "metadata": {
-    "description": "Read-only skills for working with a local Windows Outlook (Classic) mailbox: status, search, threads, calendar, and .msg/.eml files.",
-    "version": "0.5.0"
+    "description": "Read-only access to a local Windows Outlook (Classic) mailbox: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Status, search, threads, calendar, follow-ups, meeting prep, .msg/.eml files.",
+    "version": "0.6.0"
   },
   "plugins": [
     {
       "name": "outlook",
       "source": "./plugins/outlook",
-      "description": "Read-only Outlook (Classic) skills: guided setup, search (with attachments and fuzzy reranking), thread summaries, agenda and free slots, morning brief with follow-ups, meeting prep, .msg/.eml parsing, and a local memory with settings and a reply-habit profile. Never modifies the mailbox.",
-      "version": "0.5.0",
+      "description": "Read-only Outlook (Classic) skills: guided setup, search (with attachments and fuzzy reranking), thread summaries, agenda and free slots, morning brief with follow-ups, meeting prep, .msg/.eml parsing, and a local memory with settings and a reply-habit profile. Never modifies the mailbox. Pick this or outlook-mcp.",
+      "version": "0.5.1",
       "author": {
         "name": "bwinken"
       },
@@ -21,6 +21,27 @@
         "outlook",
         "email",
         "calendar",
+        "msg",
+        "eml",
+        "pst",
+        "windows",
+        "read-only"
+      ]
+    },
+    {
+      "name": "outlook-mcp",
+      "source": "./plugins/outlook-mcp",
+      "description": "Read-only MCP server over the same Outlook (Classic) scripts: search mail (with optional reranking), threads, calendar, replies owed and awaited, meeting prep, attachments, mailbox overview, .msg/.eml parsing. For hosts that want tools instead of skills, including the Claude Desktop Chat tab. Pick this or outlook.",
+      "version": "0.1.0",
+      "author": {
+        "name": "bwinken"
+      },
+      "category": "productivity",
+      "keywords": [
+        "outlook",
+        "email",
+        "calendar",
+        "mcp",
         "msg",
         "eml",
         "pst",

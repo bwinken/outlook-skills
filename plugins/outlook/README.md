@@ -17,6 +17,8 @@ Read-only skills for a **local Windows Classic Outlook** mailbox.
 
 ## Hosts
 
+- **Prefer tools over skills?** The sibling plugin `outlook-mcp` (`plugins/outlook-mcp/`) exposes the same scripts as a read-only MCP server for the Claude Desktop Chat tab, Claude Code and other MCP hosts. Install one or the other.
+
 - **Claude Code**: installed as a plugin from the marketplace at the repo root; `${CLAUDE_PLUGIN_ROOT}` in the skill files is expanded by Claude Code.
 - **Zoo Code** and other Agent Skills hosts: `python install.py` copies `skills/<name>/*.md` into `~/.roo/skills/` (`--project` for `./.roo/skills/`, `--agents` for `.agents/skills/`) and rewrites `${CLAUDE_PLUGIN_ROOT}` to this folder's absolute path, so the scripts here run from the copies. `--uninstall` removes only what it created.
 
