@@ -18,21 +18,7 @@ pip install pywin32
 /plugin install outlook@outlook-skills
 ```
 
-裝好後直接問，例如「今天有什麼會議」。第一次會自動跑 `outlook-setup` 引導設定。
-
-**Claude Chat、Cowork、Zoo Code、其他 MCP host**
-
-改裝 MCP 版 `outlook-mcp`，步驟在 [docs/mcp.md](docs/mcp.md)。和 skills 版擇一。MCP 版只讀，沒有寄信。
-
-**Claude Desktop Chat 分頁 / claude.ai 上傳 skill**
-
-```
-python install.py --zip
-```
-
-到 Customize → Skills → + 上傳 `dist/` 裡的 zip。那裡碰不到本機 Outlook，只有 `outlook-open-msg`（解析 .msg / .eml）能用。
-
-裝不起來（settings 衝突、proxy、離線）看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)。
+Troubleshooting: [docs/install-troubleshooting.md](docs/install-troubleshooting.md)
 
 ## 更新
 
@@ -40,8 +26,6 @@ python install.py --zip
 /plugin marketplace update outlook-skills
 /plugin update outlook@outlook-skills
 ```
-
-MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host 則 `git pull`。zip 上傳的重新打包再上傳。
 
 ## 功能
 
@@ -86,17 +70,14 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 | `meeting.default_duration_minutes` / `.reminder_minutes` | 60 / 15 | 沒說多久時的會議長度、提醒 |
 | `language` | zh-TW | 回覆語言 |
 
-跟 Claude 說「把工作時間改成 9 點到 5 點半」即可。
+改設定不用開檔案，直接說：
 
-記憶在 `~/.outlook-skills/memory/<分類>/<標題>.md`，讓 skill 認得「Alice」是誰、「供應商的信」在哪個資料夾。說「記住 …」「忘掉 …」「你記得什麼」；沒同意的不寫，不存內文、附件、金鑰。檔案含人名與 email，在 git repo 裡請把 `.outlook-skills/` 加進 `.gitignore`。
+> 把工作時間改成 9 點到 5 點半
 
-## 開發
+記憶在 `~/.outlook-skills/memory/<分類>/<標題>.md`，讓 skill 認得「Alice」是誰、「供應商的信」在哪個資料夾。也是用說的：
 
-```
-ruff check .
-python -m unittest discover -s plugins/outlook/tests       # 假 Outlook，任何 OS
-python -m unittest discover -s plugins/outlook-mcp/tests
-python tools/sync_scripts.py                               # 改了 plugins/outlook/scripts 後同步到 outlook-mcp
-```
+> 記住 Alice 是法務窗口，alice.chen@contoso.com
+> 忘掉 Alice
+> 你記得什麼
 
-細節：[plugins/outlook/README.md](plugins/outlook/README.md)、[plugins/outlook-mcp/README.md](plugins/outlook-mcp/README.md)。
+沒同意的不寫；不存內文、附件、金鑰。檔案含人名與 email，工作目錄是 git repo 時把 `.outlook-skills/` 加進 `.gitignore`。
