@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 SCRIPTS = os.path.join(os.path.dirname(__file__), "..", "scripts")
@@ -15,8 +16,9 @@ import rerank  # noqa: E402
 
 class SettingsTest(unittest.TestCase):
     def setUp(self):
-        self.home = tempfile.mkdtemp()
-        self.cwd = tempfile.mkdtemp()
+        # resolved, because settings.local_dir() resolves paths and Windows temp dirs come back as 8.3 short names
+        self.home = str(Path(tempfile.mkdtemp()).resolve())
+        self.cwd = str(Path(tempfile.mkdtemp()).resolve())
         self.env = mock.patch.dict(os.environ, {"HOME": self.home, "USERPROFILE": self.home})
         self.env.start()
         self.addCleanup(self.env.stop)
