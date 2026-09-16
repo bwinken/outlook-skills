@@ -4,7 +4,7 @@
 
 讓 Claude 用你本機的 Windows Outlook（Classic）：找信、讀討論串、看行程、找空檔、早安簡報、會前準備、解析 .msg / .eml，以及回信、寄信、約會議。
 
-**讀是唯讀**：不刪信、不搬信、不標已讀。**寄信和建立會議要你點兩次**：先在對話裡看過草稿、收件者或與會者說好，再在桌面跳出的確認視窗按「寄出」，才會真的送出，而且送出的內容和你看到的草稿完全一樣，頁尾註明 Drafted by Claude, approved by 你。
+讀的部分唯讀；寄信和建立會議要你點兩次：先在對話裡看過草稿說好，再在桌面跳出的確認視窗按一次，才會真的送出。哪個 skill 會寫，見下面功能表。
 
 ## 安裝
 
@@ -45,20 +45,22 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 
 ## 功能
 
-| Skill | 問法 |
-|---|---|
-| `outlook-search` | 找 Alice 上週寄的信、「上次跟供應商談價格的信」、最大的附件、把附件存出來 |
-| `outlook-thread` | 幫我摘要「Q3 預算」這串討論，結論和待辦是什麼 |
-| `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 |
-| `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔 |
-| `outlook-morning-brief` | 早安今天怎樣、有沒有急事、誰還沒回我、我還欠誰回信 |
-| `outlook-meeting-prep` | 幫我準備下一場會議 |
-| `outlook-send` | 回他說好、幫我回這封、把桌面上的報價單寄給 Alice（短信、照你的寫信習慣、可帶附件，兩次確認才寄） |
-| `outlook-schedule` | 幫我約 Cassie 週四下午開會、發個邀請、把週五早上擋起來（先看撞期，兩次確認才建立） |
-| `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
-| `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
-| `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間 |
-| `outlook-setup` | 重新設定、重新掃描信箱 |
+| Skill | 問法 | 對 Outlook |
+|---|---|---|
+| `outlook-search` | 找 Alice 上週寄的信、「上次跟供應商談價格的信」、最大的附件、把附件存出來 | 唯讀 |
+| `outlook-thread` | 幫我摘要「Q3 預算」這串討論，結論和待辦是什麼 | 唯讀 |
+| `outlook-agenda` | 今天有什麼會議、這週行程、有沒有撞期、哪場還沒回覆 | 唯讀 |
+| `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔 | 唯讀 |
+| `outlook-morning-brief` | 早安今天怎樣、有沒有急事、誰還沒回我、我還欠誰回信 | 唯讀 |
+| `outlook-meeting-prep` | 幫我準備下一場會議 | 唯讀 |
+| `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 | 唯讀（不碰 Outlook） |
+| `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 | 唯讀 |
+| `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間 | 唯讀（只寫自己的設定檔） |
+| `outlook-setup` | 重新設定、重新掃描信箱 | 唯讀（只寫自己的設定檔） |
+| `outlook-send` | 回他說好、幫我回這封、把桌面上的報價單寄給 Alice | **會寄信**：對話確認＋桌面視窗按「寄出」 |
+| `outlook-schedule` | 幫我約 Cassie 週四下午開會、發個邀請、把週五早上擋起來 | **會建立會議、送邀請**：對話確認＋桌面視窗按「送出」 |
+
+唯讀的 skill 不刪信、不搬信、不標已讀。會寫的兩個，寄出的內容和你在草稿看到的完全一樣，頁尾註明 Drafted by Claude, approved by 你；搜尋的「把附件存出來」只寫到你指定的資料夾。
 
 ## 設定與記憶
 
