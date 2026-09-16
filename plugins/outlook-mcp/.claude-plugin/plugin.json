@@ -1,7 +1,7 @@
 {
   "name": "outlook-mcp",
   "description": "Read-only MCP server for a local Windows Outlook (Classic) mailbox: search mail, read threads, calendar, replies owed and awaited, meeting prep, attachments, .msg/.eml parsing. Never writes, sends, moves or deletes anything. Alternative to the outlook skills plugin; install one or the other.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "bwinken"
   },

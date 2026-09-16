@@ -17,9 +17,7 @@ def find_anchor(a, ns):
     if a.subject:
         items = items.Restrict(f'@SQL="urn:schemas:httpmail:subject" LIKE \'%{oc.dasl_literal(a.subject)}%\'')
     items.Sort("[ReceivedTime]", True)
-    for it in oc.iter_items(items):
-        if int(oc._safe(lambda: it.Class, 0)) != oc.OL_MAIL_ITEM:
-            continue
+    for it in oc.iter_mail(items):
         if not a.conversationid or str(oc._safe(lambda: it.ConversationID, "")) == a.conversationid:
             return it
     raise SystemExit("No matching message found.")
@@ -48,9 +46,7 @@ def collect(anchor, ns):
         root = anchor.Parent.Store.GetRootFolder()
         for f in oc.mail_folders_recursive(root):
             r = f.Items.Restrict(f'@SQL="urn:schemas:httpmail:thread-topic" = \'{oc.dasl_literal(topic)}\'')
-            for m in oc.iter_items(r):
-                if int(oc._safe(lambda: m.Class, 0)) == oc.OL_MAIL_ITEM:
-                    messages.append(m)
+            messages.extend(oc.iter_mail(r))
     return messages, method
 
 

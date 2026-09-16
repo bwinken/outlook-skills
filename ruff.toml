@@ -1,0 +1,7 @@
+# pyflakes-level checks only (undefined names, unused imports, bad unpacking); style is not enforced.
+line-length = 200
+target-version = "py38"
+extend-exclude = ["plugins/outlook-mcp/scripts"]   # verbatim copy of plugins/outlook/scripts (tools/sync_scripts.py)
+
+[lint]
+select = ["F", "E9"]

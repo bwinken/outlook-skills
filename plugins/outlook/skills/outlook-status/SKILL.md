@@ -54,4 +54,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-status/reference.md` before presentin
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never add commands that call Save, Send, Delete, Move, Compact, or that change any property.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never add commands that call Save, Send, Delete, Move, Compact, or that change any property.

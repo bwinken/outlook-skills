@@ -1,32 +1,56 @@
-"""Parses real .msg samples (from the extract-msg project) with the standard-library reader.
-Samples are fetched on demand; the test is skipped when they cannot be downloaded."""
-import os, sys, urllib.request, tempfile, json
+"""Parses real .msg samples (from the msg-extractor project) with the standard-library reader.
+
+The samples are downloaded once into tests/.samples/ (git-ignored; CI caches it). Outside CI a
+failed download skips the test; on CI (CI=1) it fails, so the suite never passes by accident."""
+import json
+import os
+import sys
+import unittest
+import urllib.request
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+import read_msg  # noqa: E402
+from msgfile import MsgFile  # noqa: E402
+
 BASE = "https://raw.githubusercontent.com/TeamMsgExtractor/msg-extractor/master/example-msg-files/"
 NAMES = ["strangeDate.msg", "multi-to.msg", "unicode.msg"]
-d = tempfile.mkdtemp()
-files = []
-for n in NAMES:
-    try:
-        urllib.request.urlretrieve(BASE + n, os.path.join(d, n)); files.append(os.path.join(d, n))
-    except Exception as e:
-        print("skip (download failed):", n, e)
-if not files:
-    print("no samples; skipped"); sys.exit(0)
-import read_msg
-from msgfile import MsgFile
-for f in files:
-    r = read_msg.parse_msg(f, True, None)
-    json.dumps(r, ensure_ascii=False)
-    assert r["subject"] and r["to"], r
-    print("ok", os.path.basename(f), "|", r["subject"], "|", len(r["attachments"]), "attachments")
-if any(f.endswith("unicode.msg") for f in files):
-    m = MsgFile([f for f in files if f.endswith("unicode.msg")][0])
-    assert [a.filename for a in m.attachments] == ["import OleFileIO.tif", "raised value error.tif"]
-    assert m.attachments[0].data[:2] == b"II" and len(m.attachments[0].data) == 969674
-    assert m.sender_email == "brizhou@gmail.com" and m.message_id.startswith("<CADtJ4e")
-if any(f.endswith("multi-to.msg") for f in files):
-    r = read_msg.parse_msg([f for f in files if f.endswith("multi-to.msg")][0], False, None)
-    assert [x["address"] for x in r["to"]] == ["alice@example.com", "carol@example.com", "alice@example.com"]
-    assert r["cc"][0]["address"] == "dave@example.com" and r["date"].startswith("2021-05-28")
-print("msgfile tests passed")
+CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".samples")
+
+
+def sample(name):
+    path = os.path.join(CACHE, name)
+    if not os.path.isfile(path):
+        os.makedirs(CACHE, exist_ok=True)
+        try:
+            urllib.request.urlretrieve(BASE + name, path)
+        except Exception as e:
+            if os.environ.get("CI"):
+                raise
+            raise unittest.SkipTest(f"download failed: {name}: {e}")
+    return path
+
+
+class MsgFileTest(unittest.TestCase):
+    def test_every_sample_parses(self):
+        for n in NAMES:
+            r = read_msg.parse_msg(sample(n), True, None)
+            json.dumps(r, ensure_ascii=False)
+            self.assertTrue(r["subject"] and r["to"], r)
+
+    def test_unicode_attachments(self):
+        m = MsgFile(sample("unicode.msg"))
+        self.assertEqual([a.filename for a in m.attachments], ["import OleFileIO.tif", "raised value error.tif"])
+        self.assertEqual(m.attachments[0].data[:2], b"II")
+        self.assertEqual(len(m.attachments[0].data), 969674)
+        self.assertEqual(m.sender_email, "brizhou@gmail.com")
+        self.assertTrue(m.message_id.startswith("<CADtJ4e"))
+
+    def test_multiple_recipients(self):
+        r = read_msg.parse_msg(sample("multi-to.msg"), False, None)
+        self.assertEqual([x["address"] for x in r["to"]], ["alice@example.com", "carol@example.com", "alice@example.com"])
+        self.assertEqual(r["cc"][0]["address"], "dave@example.com")
+        self.assertTrue(r["date"].startswith("2021-05-28"))
+
+
+if __name__ == "__main__":
+    unittest.main()

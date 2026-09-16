@@ -62,4 +62,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-thread/reference.md` before presentin
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never reply, forward, flag, mark read, move or delete. If the user wants a reply drafted, write the draft text in chat for them to paste into Outlook.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never reply, forward, flag, mark read, move or delete. If the user wants a reply drafted, write the draft text in chat for them to paste into Outlook.

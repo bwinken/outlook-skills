@@ -50,4 +50,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-agenda/reference.md` before presentin
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never create, accept, decline, move or delete appointments.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never create, accept, decline, move or delete appointments.

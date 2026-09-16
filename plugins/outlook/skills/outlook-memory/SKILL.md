@@ -77,4 +77,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-ma
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Outlook is only read; the only writes are inside `.outlook-skills/` folders, and only after the user agreed.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Outlook is only read; the only writes are inside `.outlook-skills/` folders, and only after the user agreed.

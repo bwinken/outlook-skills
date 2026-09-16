@@ -2,8 +2,8 @@
 """Rerank Outlook search candidates with an OpenAI-compatible reranker gateway (vLLM).
 
 READ-ONLY with respect to Outlook: this script never touches Outlook. It reads the JSON
-produced by Search-OutlookMail.ps1 / Get-OutlookThread.ps1, sends (query, message text)
-pairs to the gateway in batches, and prints the candidates sorted by relevance score.
+produced by outlook_search.py / outlook_thread.py, sends (query, message text) pairs to the
+gateway in batches, and prints the candidates sorted by relevance score.
 
 Usage:
     python rerank.py --query "上次跟供應商談價格的信" --input candidates.json --top 10
@@ -58,7 +58,7 @@ def _plugin_settings():
     try:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import settings as ps  # settings.py next to this file
-        merged, _, _, _, _ = ps.resolve()
+        merged, _, _, _ = ps.resolve()
         r = merged.get("rerank") or {}
         out = {}
         if r.get("gateway"):
@@ -214,7 +214,7 @@ def _select_endpoint(base, model, key, args):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--query", help="natural-language query (required unless --show-config)")
-    ap.add_argument("--input", help="JSON from Search-OutlookMail.ps1 (or a JSON array)")
+    ap.add_argument("--input", help="JSON from outlook_search.py (or a JSON array)")
     ap.add_argument("--gateway", help="OpenAI-compatible base URL, e.g. http://host:8000/v1")
     ap.add_argument("--model", help=f"reranker model name (default {DEFAULT_MODEL})")
     ap.add_argument("--api-key", help="bearer token if the gateway requires one")
@@ -251,7 +251,7 @@ def main(argv=None):
         sys.exit(0 if info["usable"] else 1)
 
     if not args.query or not args.input:
-        raise SystemExit("--query and --input are required (input = JSON from Search-OutlookMail.ps1).")
+        raise SystemExit("--query and --input are required (input = JSON from outlook_search.py).")
     cands = load_candidates(args.input)
     docs = [doc_text(m, args.doc_chars) for m in cands]
 

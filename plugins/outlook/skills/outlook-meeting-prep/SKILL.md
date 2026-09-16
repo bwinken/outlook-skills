@@ -43,5 +43,5 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-meeting-prep/reference.md` for the JS
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never reply, forward, flag, mark read, move or delete. Drafts, if asked for, are written in chat only.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never reply, forward, flag, mark read, move or delete. Drafts, if asked for, are written in chat only.
 

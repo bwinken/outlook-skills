@@ -29,7 +29,7 @@ Requirements: Python 3 only. Both `.eml` and `.msg` are parsed with the standard
 
 1. Run with `--format markdown` for a quick read, or json when you need to post-process.
 2. Present: from, to/cc, date, subject, attachment names and sizes, then the body (trim long quoted history).
-3. **Always** run the quick phishing check (plugin README, "Phishing warnings") before presenting: display name vs address, Reply-To, risky attachment types, look-alike domains, credential or payment asks. If it trips, the 🚨 / ⚠️ warning goes first and every link is defanged. For a phishing or delivery question, re-run with `--headers` and add the full table from reference.md §2b (SPF / DKIM / DMARC from `Authentication-Results`, the `Received` chain). Never open attachments; refuse `--extract-to` on a 🚨 mail.
+3. **Always** run the quick phishing check (POLICY.md, "Phishing warnings") before presenting: display name vs address, Reply-To, risky attachment types, look-alike domains, credential or payment asks. If it trips, the 🚨 / ⚠️ warning goes first and every link is defanged. For a phishing or delivery question, re-run with `--headers` and add the full table from reference.md §2b (SPF / DKIM / DMARC from `Authentication-Results`, the `Received` chain). Never open attachments; refuse `--extract-to` on a 🚨 mail.
 4. Multiple files: pass them all at once; JSON output becomes an array.
 
 ## Settings and memory
@@ -47,4 +47,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-open-msg/reference.md` before present
 
 ## Read-only rules
 
-Follow the plugin's read-only policy in `${CLAUDE_PLUGIN_ROOT}/README.md`. Never edit or re-save the .msg/.eml. Never execute or open extracted attachments.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never edit or re-save the .msg/.eml. Never execute or open extracted attachments.

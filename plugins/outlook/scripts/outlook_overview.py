@@ -49,11 +49,9 @@ def run(a, ns=None):
     for f in (oc.mail_folders_recursive(inbox) if inbox is not None else []):
         items = f.Items
         items.Sort("[ReceivedTime]", True)
-        for m in oc.iter_items(items):
+        for m in oc.iter_mail(items):
             if scanned_in >= a.maxitems:
                 break
-            if int(oc._safe(lambda: m.Class, 0)) != oc.OL_MAIL_ITEM:
-                continue
             rt = oc.to_datetime(m.ReceivedTime)
             if rt < since:
                 break
@@ -79,11 +77,9 @@ def run(a, ns=None):
     if sent is not None:
         items = sent.Items
         items.Sort("[SentOn]", True)
-        for m in oc.iter_items(items):
+        for m in oc.iter_mail(items):
             if scanned_out >= a.maxitems:
                 break
-            if int(oc._safe(lambda: m.Class, 0)) != oc.OL_MAIL_ITEM:
-                continue
             st = oc.to_datetime(oc._safe(lambda: m.SentOn))
             if st and st < since:
                 break
