@@ -42,10 +42,11 @@ Show what `draft` returned, verbatim. The body block is copied from `body`, not 
 {body}
 ```
 頁尾：{footer}
+附件：報價.pdf（1.2 MB，C:\Users\me\Desktop\報價.pdf）
 （回信：原信會引用在頁尾下方，{quote 行數} 行）
 ```
 
-Say in one line where the greeting, closing and length came from (profile or default) so the user can correct the style once.
+Omit the 附件 line when there are none. Say in one line where the greeting, closing and length came from (profile or default) so the user can correct the style once.
 
 ## 3. The question (AskUserQuestion)
 
@@ -54,6 +55,7 @@ question: 要寄出這封信嗎？
 收件者：cassie.tsai@contoso.com、pc.liao@contoso.com
 副本：（無）
 主旨：RE: 合約草稿 v3 - 法務意見
+附件：報價.pdf（1.2 MB）
 內容如上；寄出的信會和草稿完全一致，並附上「Drafted by Claude, reviewed and approved by Ben」的頁尾。
 選「寄出」後桌面會跳出確認視窗，再按一次「寄出」才會真的送出。
 options:
@@ -70,7 +72,7 @@ options:
 `send` printed `{"Sent": true, ...}`:
 
 ```
-✅ 已寄出（2026-09-16 14:05）給 cassie.tsai@contoso.com、pc.liao@contoso.com，主旨「RE: 合約草稿 v3 - 法務意見」。副本在寄件備份。
+✅ 已寄出（2026-09-16 14:05）給 cassie.tsai@contoso.com、pc.liao@contoso.com，主旨「RE: 合約草稿 v3 - 法務意見」，附件 報價.pdf。副本在寄件備份。
 ```
 
 Exit 1 with "Cancelled in the confirmation window":
@@ -94,5 +96,6 @@ Any other error (unresolved recipient, item mismatch, Outlook not reachable): qu
 | `footer` | approval line from settings `send.footer` with the approver's name |
 | `quote` | quoted original (replies, when `send.quote_original` is true) |
 | `full_body` | `body` + `footer` + `quote`: the complete outgoing text, shown in the window and verified before Send |
+| `attachments[]` | `{Path, Name, Size, Sha256}`; re-hashed by `send` before attaching, names verified on the item |
 | `approver` | name in the footer |
 | `confirm` | token for `send`; recomputed from the content, so an edited draft file is refused |

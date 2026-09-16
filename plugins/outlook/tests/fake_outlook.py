@@ -82,6 +82,15 @@ class Directory:
         return None, None
 
 
+class OutgoingAttachments(list):
+    def Add(self, path):
+        import os
+        a = Attachment(os.path.basename(path), os.path.getsize(path), data=open(path, "rb").read())
+        a.PathName = path
+        self.append(a)
+        return a
+
+
 class Outgoing:
     """A MailItem made by CreateItem / Reply / ReplyAll. Send() records it on the application."""
     Class = 43
@@ -90,6 +99,7 @@ class Outgoing:
         self._app = app
         self.Recipients = Recipients(directory)
         self.Recipients.extend(recipients)
+        self.Attachments = OutgoingAttachments()
         self.Subject, self.Body, self.BodyFormat = subject, body, 2
         self.Sent, self.Saved = False, False
 

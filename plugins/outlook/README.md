@@ -37,7 +37,7 @@ python scripts/memory.py find alice
 | `outlook_calendar.py` | outlook-agenda, outlook-availability |
 | `outlook_followup.py` | outlook-morning-brief |
 | `outlook_meeting_prep.py` | outlook-meeting-prep |
-| `outlook_send.py` | outlook-send: `draft` stores the exact outgoing text, `send` opens the confirmation window and sends after the click |
+| `outlook_send.py` | outlook-send: `draft` stores the exact outgoing text and hashes the attachments, `send` opens the confirmation window and sends after the click |
 | `outlook_meeting.py` | outlook-schedule: same two steps for a meeting or appointment, with an overlap check in the draft |
 | `outlook_overview.py`, `outlook_style.py` | outlook-setup (mailbox scan, reply-habit profile) |
 | `read_msg.py`, `msgfile.py` | outlook-open-msg (no Outlook needed, any OS) |
