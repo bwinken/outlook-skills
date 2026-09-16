@@ -96,7 +96,4 @@ python tools/sync_scripts.py                               # 改了 plugins/outl
 
 ## Roadmap
 
-- 規則稽核：列出 Outlook rules，標出自動轉寄到外部、自動刪除等可疑設定
-- 聯絡人查詢
-- 收件匣裡的信直接做標頭釣魚分析（目前只有 .msg / .eml 檔）
 - 不開 Outlook 直接讀 .pst
