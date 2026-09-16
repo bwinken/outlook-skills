@@ -88,7 +88,7 @@ MCP Servers 面板 → Edit Global MCP（或專案內的 `.roo/mcp.json`），�
     "outlook": {
       "command": "C:\\path\\to\\python.exe",
       "args": ["C:\\tools\\outlook-skills\\plugins\\outlook-mcp\\server.py"],
-      "alwaysAllow": ["search_mail", "get_thread", "list_calendar", "list_followups", "prepare_meeting", "mailbox_overview", "get_status"],
+      "alwaysAllow": ["search_mail", "get_thread", "list_calendar", "list_followups", "mailbox_overview", "get_status"],
       "disabled": false
     }
   }
@@ -143,7 +143,6 @@ python C:\tools\outlook-skills\plugins\outlook-mcp\server.py --call get_status "
 | `outlook-agenda` | `list_calendar` | 相同 |
 | `outlook-availability` | `list_calendar` | 空檔由模型從行事曆算，沒有 skill 裡的計算規則 |
 | `outlook-morning-brief` | `list_calendar` + `search_mail` + `list_followups` | 沒有簡報流程，模型自己組合 |
-| `outlook-meeting-prep` | `prepare_meeting` | 相同 |
 | `outlook-open-msg` | `parse_msg_file` | 讀磁碟上的檔案；沒有釣魚信判讀指引 |
 | `outlook-setup` | `mailbox_overview` | 只有掃描統計，沒有設定精靈、不寫記憶 |
 | `outlook-memory` | 無 | skill 專屬 |

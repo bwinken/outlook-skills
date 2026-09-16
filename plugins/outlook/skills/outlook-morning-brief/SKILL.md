@@ -28,7 +28,7 @@ Add `-HighImportance` or `-Flagged` searches when the user asks for "urgent" or 
 3. Use the `store` setting or `-AllStores` when mail lives in a PST; `-AllFolders` when rules file mail into subfolders.
 4. Load the memory index and open `people` / `projects` notes matching senders, attendees or subjects so key contacts and live projects are recognised.
 5. Rank and group mail per reference.md using previews only; open a thread with `outlook-thread` for at most the two or three that decide the day.
-6. Present per reference.md. Keep the whole brief under one screen: counts and the few items that matter, not every mail. Offer next steps: open a thread, prep a meeting (`outlook-meeting-prep`), reply through `outlook-send`.
+6. Present per reference.md. Keep the whole brief under one screen: counts and the few items that matter, not every mail. Offer next steps: open a thread, reply through `outlook-send`.
 
 ## Follow-ups on their own
 

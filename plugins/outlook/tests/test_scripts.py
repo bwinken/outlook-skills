@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 import outlook_com as oc  # noqa: E402
 import fake_outlook as fo  # noqa: E402
 import outlook_search, outlook_thread, outlook_calendar, outlook_overview  # noqa: E402
-import outlook_followup, outlook_attachments, outlook_meeting_prep, outlook_style  # noqa: E402
+import outlook_followup, outlook_attachments, outlook_style  # noqa: E402
 
 
 class _Now(dt.datetime):
@@ -161,18 +161,6 @@ class AttachmentsTest(FakeOutlookTest):
         at = outlook_attachments.run(outlook_attachments.parser().parse_args(["-Store", "20230731", "-Ext", "pptx", "-SaveTo", d]))
         with open(at["Results"][0]["SavedTo"], "rb") as fh:
             self.assertEqual(fh.read(), b"pptx")
-
-
-class MeetingPrepTest(FakeOutlookTest):
-    def test_next_meeting_with_attendees(self):
-        with mock.patch.object(outlook_meeting_prep.dt, "datetime", _Now):
-            mp = outlook_meeting_prep.run(outlook_meeting_prep.parser().parse_args(["-Subject", "供應商", "-Store", "20230731", "-Horizon", "7", "-Days", "30"]))
-        self.assertEqual(mp["Meeting"]["Subject"], "供應商簡報")
-        self.assertEqual([x["Address"] for x in mp["Attendees"]], ["cassie.tsai@contoso.com", "pc.liao@contoso.com"])
-        cas, pc = mp["ByAttendee"]
-        self.assertTrue({"id1", "s3"} <= set(ids(cas["Mails"])))
-        self.assertTrue({"id6", "s2"} <= set(ids(pc["Mails"])))
-        self.assertTrue(any(a["FileName"] == "人才名單.xlsx" for a in mp["Attachments"]))
 
 
 class StyleTest(FakeOutlookTest):

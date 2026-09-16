@@ -28,7 +28,6 @@ import outlook_com as oc  # noqa: E402
 import outlook_attachments  # noqa: E402
 import outlook_calendar  # noqa: E402
 import outlook_followup  # noqa: E402
-import outlook_meeting_prep  # noqa: E402
 import outlook_overview  # noqa: E402
 import outlook_search  # noqa: E402
 import outlook_status  # noqa: E402
@@ -49,7 +48,7 @@ INSTRUCTIONS = (
     "Folder names may be English (Inbox, Sent Items) or as shown in a localized Outlook (收件匣, 寄件備份). "
     "When mail lives in a .pst, pass store (its display name from get_status) or allstores=true; "
     "a `store` default from ~/.outlook-skills/settings.json is applied automatically when neither is given. "
-    "EntryID values from search_mail go to get_thread; appointment EntryIDs from list_calendar go to prepare_meeting. "
+    "EntryID values from search_mail go to get_thread. "
     "Prefer narrow filters (from, after, anyof) and a small max over includebody. "
     "search_mail accepts a natural-language `query`: when the user configured a reranker gateway "
     "(settings rerank.gateway or OUTLOOK_RERANK_URL) the candidates are reranked by it automatically; "
@@ -162,9 +161,6 @@ TOOLS = [
      "description": "Mails waiting for a reply. direction=sent: the user wrote and nobody answered for `days` (default 3). "
                     "direction=received: someone wrote to the user and the user has not answered (default 2 days); LooksLikeQuestion flags requests. "
                     "direction=both: one scan, both lists under Sent and Received."},
-    {"name": "prepare_meeting", "parser": outlook_meeting_prep.parser, "run": lambda a, _: outlook_meeting_prep.run(a), "writes": False,
-     "description": "Briefing before a meeting: the appointment, its attendees, recent mail exchanged with each attendee, mail about the "
-                    "meeting's subject and attachments seen along the way. Default: the next upcoming meeting; or subject / entryid."},
     {"name": "find_attachments", "parser": outlook_attachments.parser, "run": lambda a, _: outlook_attachments.run(a), "writes": True,
      "skip": ("hasattachments", "includebody"),
      "description": "Find attachments across mails by file name, extension or size, combined with every search_mail filter. Rows are attachments. "

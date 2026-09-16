@@ -32,7 +32,7 @@ Options:
 1. Pick the range from the request. "This week" = Monday to next Monday; "tomorrow" = a one-day range starting tomorrow.
 2. Present an agenda grouped by day (see reference.md): time, subject, location, organizer, response status. All-day items first.
 3. Call out, after the agenda: overlapping meetings (`Conflicts`), invitations still `NotResponded`, and cancelled meetings still on the calendar.
-4. For meeting prep, take attendee names from an item and hand them to `outlook-search -From ...` to gather recent mails.
+4. To prepare for a meeting, take attendee names from an item and hand them to `outlook-search -From ...` to gather recent mails.
 5. If the user asks when they are free, switch to `outlook-availability`.
 
 ## Settings and memory

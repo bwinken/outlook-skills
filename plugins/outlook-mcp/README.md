@@ -9,7 +9,6 @@ Install this **or** `outlook`, not both. Per-client setup: [docs/mcp.md](../../d
 | `get_thread` | A whole conversation, oldest first, full bodies |
 | `list_calendar` | Calendar items in a range, recurrences expanded, conflicts flagged |
 | `list_followups` | Replies the user is waiting for (`direction=sent`), still owes (`received`), or both from one scan (`both`) |
-| `prepare_meeting` | Attendees, recent mail with them, mail about the subject, attachments |
 | `find_attachments` | Attachments by name, extension, size on top of every search filter; `saveto` copies them out |
 | `mailbox_overview` | Top senders, recipients, folders, topics, newsletters, recurring meetings; no bodies |
 | `get_status` | Outlook version, profiles, accounts, .pst/.ost stores, folder counts |
