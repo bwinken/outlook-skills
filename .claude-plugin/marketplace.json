@@ -4,15 +4,15 @@
     "name": "bwinken"
   },
   "metadata": {
-    "description": "Read-only access to a local Windows Outlook (Classic) mailbox: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Status, search, threads, calendar, follow-ups, meeting prep, .msg/.eml files.",
-    "version": "0.7.0"
+    "description": "A local Windows Outlook (Classic) mailbox for Claude: as Claude Code skills (outlook) or as an MCP server (outlook-mcp). Read search, threads, calendar, follow-ups, meeting prep, .msg/.eml files; the skills plugin also sends, replies and creates meetings, only after the user confirms in a desktop window; the MCP server stays read-only.",
+    "version": "0.9.0"
   },
   "plugins": [
     {
       "name": "outlook",
       "source": "./plugins/outlook",
-      "description": "Read-only Outlook (Classic) skills: guided setup, search (with attachments and fuzzy reranking), thread summaries, agenda and free slots, morning brief with follow-ups, meeting prep, .msg/.eml parsing, and a local memory with settings and a reply-habit profile. Never modifies the mailbox. Pick this or outlook-mcp.",
-      "version": "0.6.0",
+      "description": "Outlook (Classic) skills: guided setup, search (with attachments and fuzzy reranking), thread summaries, agenda and free slots, morning brief with follow-ups, meeting prep, .msg/.eml parsing, a local memory with settings and a reply-habit profile, and send / reply / create meeting that go out only after the user approves the draft in chat and clicks in a desktop window. Pick this or outlook-mcp.",
+      "version": "0.8.0",
       "author": {
         "name": "bwinken"
       },

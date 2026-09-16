@@ -39,7 +39,7 @@ No `Save`, `Send`, `Delete`, `Move`, `Display`, no property setters, nothing mar
 ```
 server.py      stdio JSON-RPC 2.0 server; initialize, ping, tools/list, tools/call; --list / --call for debugging
 install.py     prints or writes the MCP registration for non-marketplace hosts
-scripts/       verbatim copy of plugins/outlook/scripts (edit there, then python tools/sync_scripts.py; CI checks)
+scripts/       verbatim copy of plugins/outlook/scripts (edit there, then python tools/sync_scripts.py; CI checks). outlook_send.py is in the copy but not exposed as a tool
 tests/         python -m unittest discover -s tests
 ```
 

@@ -1,7 +1,7 @@
 {
   "name": "outlook",
-  "description": "Read-only skills for a local Windows Outlook (Classic) mailbox. Reads mail, threads, calendar and .msg/.eml files; never writes, sends, moves or deletes anything.",
-  "version": "0.6.0",
+  "description": "Skills for a local Windows Outlook (Classic) mailbox. Reads mail, threads, calendar and .msg/.eml files; sends, replies or creates a meeting only after the user approves the draft and clicks in a desktop window. Never moves, deletes or marks anything.",
+  "version": "0.8.0",
   "author": {
     "name": "bwinken"
   },
@@ -11,6 +11,7 @@
     "calendar",
     "msg",
     "eml",
-    "read-only"
+    "send",
+    "meeting"
   ]
 }

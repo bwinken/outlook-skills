@@ -63,4 +63,4 @@ Rules:
 - Time axis: one line per message, at most 15 rows. For longer threads group by day and summarise.
 - Quote short key sentences verbatim when wording matters (e.g. an approval, a rejection, a number).
 - If the user only asked a specific question (e.g. "did they approve the price?"), answer it first in one paragraph, then offer the full structure.
-- If the user wants a reply, draft it in chat under a `**回信草稿**` heading. The plugin cannot send it.
+- If the user wants a reply, hand over to `outlook-send` with the message's `EntryID`; it drafts in the user's style, shows the draft, and sends only after the user approves in chat and in the confirmation window.

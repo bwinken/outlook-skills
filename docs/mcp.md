@@ -2,7 +2,7 @@
 
 <p align="center"><a href="../README.md">📚 outlook skills</a>&ensp;|&ensp;<b>🔌 outlook-mcp</b></p>
 
-`outlook-mcp` 是這個 marketplace 的第二個 plugin。它把 `outlook` skills 用的同一套 Python script 包成一個 **唯讀的 MCP server**，給不吃 skills、或想直接用 tool 的 client 用：Claude Chat、Cowork、Zoo Code、其他 MCP host。設定檔（`~/.outlook-skills/settings.json`）、唯讀政策都和 skills 相同。
+`outlook-mcp` 是這個 marketplace 的第二個 plugin。它把 `outlook` skills 用的同一套 Python script 包成一個 **唯讀的 MCP server**，給不吃 skills、或想直接用 tool 的 client 用：Claude Chat、Cowork、Zoo Code、其他 MCP host。設定檔（`~/.outlook-skills/settings.json`）、唯讀政策都和 skills 相同；skills 版的寄信、回信（`outlook-send`）目前不在 MCP 版裡。
 
 **和 `outlook` skills 擇一安裝。** 兩個都裝也能動，但 MCP server 每個 session 都會啟動、九個 tool 一直佔 context；平常用 Claude Code 的人裝 skills 就夠了。
 

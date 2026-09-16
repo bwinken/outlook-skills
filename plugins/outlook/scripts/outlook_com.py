@@ -3,7 +3,8 @@
 
 Every function here only reads from Outlook through COM automation. There is deliberately no
 wrapper for Save, Send, Delete, Move, Copy, MarkAsRead/UnRead, Display, or any property setter.
-Scripts that import this module must follow the same rule: never call a mutating COM method.
+Scripts that import this module follow the same rule, with one exception: outlook_send.py creates and
+sends a mail, and only after the user clicked Send in a window on their own desktop.
 
 Requires Classic Outlook (2013 ... Microsoft 365) on Windows and `pip install pywin32`.
 "New Outlook" (olk.exe) has no COM object model and is not supported.
@@ -19,8 +20,9 @@ OL_FOLDER = {
     "DeletedItems": 3, "Outbox": 4, "SentMail": 5, "Inbox": 6, "Calendar": 9, "Contacts": 10,
     "Journal": 11, "Notes": 12, "Tasks": 13, "Drafts": 16, "Junk": 23,
 }
-OL_MAIL_ITEM = 43
+OL_MAIL_ITEM = 43          # item.Class of a mail
 OL_APPOINTMENT = 26
+OL_ITEM_TYPE_MAIL = 0      # Application.CreateItem argument (OlItemType), used only by outlook_send.py
 
 # MAPI property tags via PropertyAccessor (read-only lookups)
 PR_SENDER_SMTP_ADDRESS = "http://schemas.microsoft.com/mapi/proptag/0x5D01001F"

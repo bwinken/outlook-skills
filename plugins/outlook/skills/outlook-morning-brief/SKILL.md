@@ -28,7 +28,7 @@ Add `-HighImportance` or `-Flagged` searches when the user asks for "urgent" or 
 3. Use the `store` setting or `-AllStores` when mail lives in a PST; `-AllFolders` when rules file mail into subfolders.
 4. Load the memory index and open `people` / `projects` notes matching senders, attendees or subjects so key contacts and live projects are recognised.
 5. Rank and group mail per reference.md using previews only; open a thread with `outlook-thread` for at most the two or three that decide the day.
-6. Present per reference.md. Keep the whole brief under one screen: counts and the few items that matter, not every mail. Offer read-only next steps: open a thread, prep a meeting (`outlook-meeting-prep`), draft a reply in chat.
+6. Present per reference.md. Keep the whole brief under one screen: counts and the few items that matter, not every mail. Offer next steps: open a thread, prep a meeting (`outlook-meeting-prep`), reply through `outlook-send`.
 
 ## Follow-ups on their own
 
@@ -41,7 +41,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_followup.py" -Direction received  
 
 `-Direction both` returns both lists from one scan, under `Sent` and `Received`. Options: `-Days N` minimum age before a mail counts as waiting; `-Lookback N` days scanned (default 60); `-Store` / `-AllStores`; `-QuestionsOnly` (received) keeps only mails that look like a question; `-Max`, `-PreviewLength`, `-OutFile`.
 
-A mail counts as answered when a later mail in the same conversation comes from the other side, within Inbox and Sent Items. Replies given by phone or chat, or filed elsewhere by a rule, are not seen: say so when the list looks wrong. For **received**, use `LooksLikeQuestion` and `DirectToMe` plus the preview to separate real asks from FYI mails. Present with the stand-alone templates in reference.md §4. Offer read-only next steps: open the thread, or draft a nudge in chat. Never send.
+A mail counts as answered when a later mail in the same conversation comes from the other side, within Inbox and Sent Items. Replies given by phone or chat, or filed elsewhere by a rule, are not seen: say so when the list looks wrong. For **received**, use `LooksLikeQuestion` and `DirectToMe` plus the preview to separate real asks from FYI mails. Present with the stand-alone templates in reference.md §4. Offer next steps: open the thread, or send a nudge through `outlook-send` (it asks before sending).
 
 ## Settings and memory
 
@@ -53,4 +53,4 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-morning-brief/reference.md` for the r
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never mark read, flag, reply, accept, decline, move or delete. Drafts, if asked for, are written in chat only.
+Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never mark read, flag, accept, decline, move or delete. Replies go through `outlook-send`, never from here.
