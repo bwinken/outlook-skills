@@ -1,10 +1,10 @@
 # Policy for every outlook skill
 
-Read by the skills at run time. Two rules: never write to Outlook, and warn before showing a mail that looks like phishing.
+Read by the skills at run time. Two rules: never write to Outlook except through `outlook-send`, whose Send happens only after the user clicked Send in a window on their desktop; and warn before showing a mail that looks like phishing.
 
 ## Read-only policy
 
-No script or skill may:
+Apart from `scripts/outlook_send.py send` (see below), no script or skill may:
 
 - call `Save`, `Send`, `Delete`, `Move`, `Copy`, `Forward`, `Reply`, `ReplyAll`, `Respond`, `Display`;
 - set any property (`UnRead`, `Categories`, `FlagStatus`, `Importance`, `BusyStatus`, ...);
@@ -13,6 +13,8 @@ No script or skill may:
 - write anywhere except a user-specified `-OutFile` / `--extract-to` path and the plugin's own `.outlook-skills/` folders.
 
 Reading through COM does not change read/unread state. The shared module `scripts/outlook_com.py` exposes only getters; add new skills on top of it and keep the same rule.
+
+**The one exception, sending mail.** `outlook_send.py` creates and sends a mail in two steps: `draft` stores the exact recipients, subject and text and sends nothing; `send` opens a confirmation window on the user's own desktop showing all of it, and calls Send only after the user clicks Send there. The item is compared with the stored draft first and not sent on any difference. No flag, setting or environment variable skips the window. The `outlook-send` skill additionally gets the user's yes in chat, on the recipients and the text, before it runs `send`. No other skill sends, saves to Drafts, replies, forwards or accepts anything.
 
 ## Phishing warnings
 

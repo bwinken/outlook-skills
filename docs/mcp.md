@@ -2,7 +2,7 @@
 
 <p align="center"><a href="../README.md">📚 outlook skills</a>&ensp;|&ensp;<b>🔌 outlook-mcp</b></p>
 
-`outlook-mcp` 是這個 marketplace 的第二個 plugin。它把 `outlook` skills 用的同一套 Python script 包成一個 **唯讀的 MCP server**，給不吃 skills、或想直接用 tool 的 client 用：Claude Chat、Cowork、Zoo Code、其他 MCP host。設定檔（`~/.outlook-skills/settings.json`）、唯讀政策都和 skills 相同。
+`outlook-mcp` 是這個 marketplace 的第二個 plugin。它把 `outlook` skills 用的同一套 Python script 包成一個 **MCP server**（讀是唯讀；`send_mail` 要使用者在桌面確認視窗按「寄出」才會送），給不吃 skills、或想直接用 tool 的 client 用：Claude Chat、Cowork、Zoo Code、其他 MCP host。設定檔（`~/.outlook-skills/settings.json`）、唯讀政策都和 skills 相同。
 
 **和 `outlook` skills 擇一安裝。** 兩個都裝也能動，但 MCP server 每個 session 都會啟動、九個 tool 一直佔 context；平常用 Claude Code 的人裝 skills 就夠了。
 
@@ -66,7 +66,7 @@ Chat 和 Cowork 本身跑在 Anthropic 那邊，碰不到你的 Outlook；Connec
 | Environment variables | 通常留空。要用 reranker 又不想寫進 settings.json，可以在這裡設 `OUTLOOK_RERANK_URL`、`OUTLOOK_RERANK_MODEL`、`OUTLOOK_RERANK_API_KEY` |
 | Environment helper script | 留空 |
 | Startup timeout | 預設即可。server 啟動時不碰 Outlook，第一次呼叫 tool 才連，所以啟動很快 |
-| Tool policy | 全部 tool 都是唯讀的，可以放心設成不必逐次核准；`find_attachments`（`saveto` 會把附件複製到磁碟）和 `parse_msg_file`（`extract_to` 同理）想保留核准就留給使用者控制 |
+| Tool policy | 讀的 tool 可以放心設成不必逐次核准。`send_mail` 建議保留逐次核准（它本身還會在桌面跳確認視窗，按了才寄）；`find_attachments`（`saveto` 會把附件複製到磁碟）和 `parse_msg_file`（`extract_to` 同理）想保留核准就留給使用者控制 |
 
 這是 Chat 分頁唯一能讀本機 Outlook 的方式；以 skill zip 上傳到 Chat 只有 `outlook-open-msg` 能用。更新：到 `C:\tools\outlook-skills` 跑 `git pull`（或重新下載 ZIP 覆蓋），重開 Claude Desktop；路徑沒變就不用改 connector。
 
@@ -95,7 +95,7 @@ MCP Servers 面板 → Edit Global MCP（或專案內的 `.roo/mcp.json`），�
 }
 ```
 
-`alwaysAllow` 列的是純讀取的 tool；`find_attachments` 和 `parse_msg_file` 可能寫檔，留給逐次核准。Zoo Code 也可以繼續用 skills（`python install.py` 裝到 `~/.roo/skills/`），兩者擇一。
+`alwaysAllow` 列的是純讀取的 tool；`send_mail`（桌面確認視窗按了才寄）、`draft_mail`、`find_attachments` 和 `parse_msg_file` 會寫檔或寄信，留給逐次核准。Zoo Code 也可以繼續用 skills（`python install.py` 裝到 `~/.roo/skills/`），兩者擇一。
 
 ### 其他 MCP host（Cursor、VS Code、Windsurf 等）
 

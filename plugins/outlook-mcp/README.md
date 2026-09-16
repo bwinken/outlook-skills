@@ -1,6 +1,6 @@
 # outlook-mcp (plugin)
 
-A read-only MCP server over the same scripts as the `outlook` skills plugin, for hosts that want tools instead of skills: Claude Chat / Cowork, Claude Code, Zoo Code, any MCP client on the Windows machine.
+An MCP server over the same scripts as the `outlook` skills plugin, for hosts that want tools instead of skills: Claude Chat / Cowork, Claude Code, Zoo Code, any MCP client on the Windows machine.
 Install this **or** `outlook`, not both. Per-client setup: [docs/mcp.md](../../docs/mcp.md).
 
 | Tool | What it does |
@@ -14,6 +14,8 @@ Install this **or** `outlook`, not both. Per-client setup: [docs/mcp.md](../../d
 | `mailbox_overview` | Top senders, recipients, folders, topics, newsletters, recurring meetings; no bodies |
 | `get_status` | Outlook version, profiles, accounts, .pst/.ost stores, folder counts |
 | `parse_msg_file` | Parse .msg / .eml files without Outlook, any OS |
+| `draft_mail` | Step 1 of sending: resolve recipients, store the exact outgoing text, return `id` and `confirm`; sends nothing |
+| `send_mail` | Step 2: a confirmation window on the user's desktop shows To, Cc, Subject and the full text; Send happens only after they click Send there |
 
 Tool inputs are the options of the matching script; `python server.py --list` prints the schemas, `python server.py --call get_status '{}'` runs one tool.
 
@@ -30,9 +32,9 @@ Same `~/.outlook-skills/settings.json` as the skills ([keys](../../README.md#設
 
 Memory notes are a skills feature and are not read by the server.
 
-## Read-only
+## Read-only, except sending
 
-No `Save`, `Send`, `Delete`, `Move`, `Display`, no property setters, nothing marked read. The only files written are the ones the user asks for (`find_attachments` `saveto`, `parse_msg_file` `extract_to`); those two tools carry `readOnlyHint: false`.
+No `Save`, `Delete`, `Move`, `Display`, no property setters, nothing marked read. `send_mail` is the only tool that changes anything, and only after the user's click in the desktop window (`destructiveHint: true`). The only files written are drafts under `~/.outlook-skills/drafts/` and the ones the user asks for (`find_attachments` `saveto`, `parse_msg_file` `extract_to`); those tools carry `readOnlyHint: false`.
 
 ## Layout
 

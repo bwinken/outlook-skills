@@ -2,7 +2,9 @@
 
 <p align="center"><b>📚 outlook skills</b>&ensp;|&ensp;<a href="docs/mcp.md">🔌 outlook-mcp</a></p>
 
-讓 Claude **唯讀**你本機的 Windows Outlook（Classic）：找信、讀討論串、看行程、找空檔、早安簡報、會前準備、解析 .msg / .eml。不寄信、不刪信、不標已讀。
+讓 Claude 用你本機的 Windows Outlook（Classic）：找信、讀討論串、看行程、找空檔、早安簡報、會前準備、解析 .msg / .eml，以及回信、寄信。
+
+**讀是唯讀**：不刪信、不搬信、不標已讀。**寄信要你點兩次**：先在對話裡看過草稿、收件者、副本說好，再在桌面跳出的確認視窗按「寄出」，信才會出去，而且寄出的內容和你看到的草稿完全一樣，頁尾註明 Drafted by Claude, approved by 你。
 
 ## 安裝
 
@@ -51,6 +53,7 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 | `outlook-availability` | 禮拜三有沒有空、幫我找一小時的空檔 |
 | `outlook-morning-brief` | 早安今天怎樣、有沒有急事、誰還沒回我、我還欠誰回信 |
 | `outlook-meeting-prep` | 幫我準備下一場會議 |
+| `outlook-send` | 回他說好、幫我回這封、寄信給 Alice 說會議改週四（短信、照你的寫信習慣，兩次確認才寄） |
 | `outlook-open-msg` | 打開這個 .msg / .eml、看標頭判斷是不是釣魚信 |
 | `outlook-status` | 我的 Outlook 資料檔在哪、信箱多大、有哪些帳號 |
 | `outlook-memory` | 記住 Alice 是誰、忘掉、你記得什麼、設定工作時間 |
@@ -77,6 +80,7 @@ MCP 版：`/plugin update outlook-mcp@outlook-skills`，非 Claude Code 的 host
 | `search.default_lookback_days` / `.default_folder` / `.all_folders` | 90 / Inbox / false | 沒說日期、資料夾時的搜尋範圍 |
 | `search.direct_read_max` | 20 | 結果不超過此數就直接讀，不用 reranker |
 | `rerank.gateway` / `.model` / `.api_key` / `.auto_consent` | null / bge-reranker-v2-m3 / null / false | 模糊搜尋用的 reranker；`auto_consent` 為 true 就不每次問 |
+| `send.approver` / `.footer` / `.quote_original` / `.dialog_timeout_seconds` | Outlook 使用者名稱 / Drafted by Claude… / true / 300 | 寄信頁尾的核准者與文字、回信是否引用原信、確認視窗等多久 |
 | `language` | zh-TW | 回覆語言 |
 
 跟 Claude 說「把工作時間改成 9 點到 5 點半」即可。
@@ -96,8 +100,4 @@ python tools/sync_scripts.py                               # 改了 plugins/outl
 
 ## Roadmap
 
-目前只讀。下一步加寫入功能，每個動作都先給你看內容、確認後才執行：
-
-- 寄信
-- 回信
-- 建立會議
+- 建立會議（和寄信一樣，先看草稿、桌面確認視窗按了才建立）

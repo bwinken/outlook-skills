@@ -30,6 +30,83 @@ class Recipient:
     def __init__(self, name, address, rtype=1):
         self.Name, self.Address, self.Type = name, address, rtype
         self.PropertyAccessor = PropertyAccessor({"http://schemas.microsoft.com/mapi/proptag/0x39FE001F": address})
+        self.Resolved = bool(address)
+
+    def Resolve(self):
+        return self.Resolved
+
+
+class Recipients(list):
+    """Recipients collection of an outgoing item: Add / Remove / Count / ResolveAll, 1-based Remove."""
+
+    def __init__(self, directory):
+        super().__init__()
+        self._dir = directory
+
+    @property
+    def Count(self):
+        return len(self)
+
+    def Add(self, text):
+        name, addr = self._dir.lookup(text)
+        r = Recipient(name or text, addr or "", 1)
+        self.append(r)
+        return r
+
+    def Remove(self, index):
+        del self[index - 1]
+
+    def ResolveAll(self):
+        return all(r.Resolved for r in self)
+
+
+class Directory:
+    """Address book: display names seen anywhere in the fixture, plus any plain SMTP address."""
+
+    def __init__(self):
+        self.by_name, self.by_addr = {}, {}
+
+    def learn(self, name, address):
+        if name and address:
+            self.by_name.setdefault(name.lower(), (name, address))
+            self.by_addr.setdefault(address.lower(), (name, address))
+
+    def lookup(self, text):
+        t = (text or "").strip()
+        if t.lower() in self.by_addr:
+            return self.by_addr[t.lower()]
+        if t.lower() in self.by_name:
+            return self.by_name[t.lower()]
+        if "@" in t:
+            return t, t
+        return None, None
+
+
+class Outgoing:
+    """A MailItem made by CreateItem / Reply / ReplyAll. Send() records it on the application."""
+    Class = 43
+
+    def __init__(self, app, directory, subject="", body="", recipients=()):
+        self._app = app
+        self.Recipients = Recipients(directory)
+        self.Recipients.extend(recipients)
+        self.Subject, self.Body, self.BodyFormat = subject, body, 2
+        self.Sent, self.Saved = False, False
+
+    @property
+    def To(self):
+        return "; ".join(r.Name for r in self.Recipients if r.Type == 1)
+
+    @property
+    def CC(self):
+        return "; ".join(r.Name for r in self.Recipients if r.Type == 2)
+
+    def Send(self):
+        self.Sent = True
+        self._app.sent.append(self)
+
+    def Save(self):
+        self.Saved = True
 
 
 class Mail:
@@ -56,6 +133,17 @@ class Mail:
 
     def GetConversation(self):
         return self._conversation
+
+    def Reply(self):
+        app = self.Parent.Store._app
+        return Outgoing(app, app.directory, "RE: " + self.Subject, "\n-----Original Message-----\n" + self.Body,
+                        [Recipient(self.SenderName, self.SenderEmailAddress, 1)])
+
+    def ReplyAll(self):
+        app = self.Parent.Store._app
+        others = [Recipient(r.Name, r.Address, r.Type) for r in self.Recipients if r.Address.lower() != "me@contoso.com"]
+        return Outgoing(app, app.directory, "RE: " + self.Subject, "\n-----Original Message-----\n" + self.Body,
+                        [Recipient(self.SenderName, self.SenderEmailAddress, 1)] + others)
 
 
 class Appointment:
@@ -217,17 +305,38 @@ class Conversation:
         return Table(self._ids)
 
 
+class Application:
+    """Only what outlook_send.py needs: CreateItem, and the list of items Send() was called on."""
+
+    def __init__(self, directory):
+        self.directory, self.sent, self.Version = directory, [], "16.0.fake"
+
+    def CreateItem(self, item_type):
+        assert item_type == 0, item_type
+        return Outgoing(self, self.directory)
+
+
 class Namespace:
     def __init__(self, stores, default_store):
         self.Stores = stores
         self._default = default_store
         self.Accounts = [type("Acc", (), {"SmtpAddress": "me@contoso.com", "DisplayName": "me", "UserName": "me", "AccountType": 0})()]
         self._by_id = {}
+        self.directory = Directory()
+        self.Application = Application(self.directory)
         for s in stores:
+            s._app = self.Application
             for f in _walk(s.GetRootFolder()):
                 for it in f._items:
                     self._by_id[it.EntryID] = it
-        self.CurrentUser = type("U", (), {"Address": "me@contoso.com", "AddressEntry": None})()
+                    self.directory.learn(getattr(it, "SenderName", ""), getattr(it, "SenderEmailAddress", ""))
+                    for r in getattr(it, "Recipients", []):
+                        self.directory.learn(r.Name, r.Address)
+        self.CurrentUser = type("U", (), {"Name": "Ben", "Address": "me@contoso.com", "AddressEntry": None})()
+
+    def CreateRecipient(self, text):
+        name, addr = self.directory.lookup(text)
+        return Recipient(name or text, addr or "", 1)
 
     def GetDefaultFolder(self, fid):
         return self._default.GetDefaultFolder(fid)
