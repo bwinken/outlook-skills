@@ -10,15 +10,7 @@
 
 - Windows、Classic Outlook（New Outlook 沒有 COM，不支援）。
 - Python 3.8+，並在 **同一個 Python** 裡 `pip install pywin32`。
-- 除了 Claude Code 的 plugin 安裝以外，其他 client 都要把 repo 放到本機固定位置，例如 `git clone https://github.com/bwinken/outlook-skills C:\tools\outlook-skills`（或 GitHub 頁面 Code → Download ZIP 解壓）。之後不要移動這個資料夾。
-
-放好以後先跑一次，它會印出每種 client 要填的值（Python 絕對路徑、server.py 絕對路徑）：
-
-```
-python C:\tools\outlook-skills\plugins\outlook-mcp\install.py
-```
-
-用哪個 `python` 跑這行，印出來的就是哪個 Python 的路徑，所以請用裝了 pywin32 的那個。
+- 只有 Claude Code 的 plugin 安裝會自己抓程式碼；其他 client 都要先把 repo 放到本機固定位置（各段有寫），之後不要移動。
 
 ## 各 client 怎麼裝
 
@@ -39,22 +31,44 @@ python C:\tools\outlook-skills\plugins\outlook-mcp\install.py
 claude mcp add --scope user outlook -- C:\path\to\python.exe "C:\tools\outlook-skills\plugins\outlook-mcp\server.py"
 ```
 
-### Claude Chat（claude.ai 桌面版 / Claude Desktop 的 Chat 分頁）、Cowork
+### Claude Chat（Claude Desktop 的 Chat 分頁）、Cowork
 
-在 Settings → Connectors 新增一個 connector，Transport 選 **Local command (stdio)**，欄位這樣填（`install.py` 會印出你機器上的實際路徑）：
+Chat 和 Cowork 本身跑在 Anthropic 那邊，碰不到你的 Outlook；Connectors 的 Local command 是叫 **你電腦上的 Claude Desktop** 啟動一個程式，再把結果送回去。所以程式碼、Python、pywin32 都要先在本機，而且要用 Claude Desktop 桌面版（瀏覽器版的 claude.ai 沒有 Local command）。
+
+1. **把 repo 下載到本機固定位置**，之後不要移動：
+   ```
+   git clone https://github.com/bwinken/outlook-skills C:\tools\outlook-skills
+   ```
+   沒有 git 就到 GitHub 頁面 Code → Download ZIP，解壓到 `C:\tools\outlook-skills`。
+2. **裝 Python 和 pywin32**（已有 Python 就只跑第二行）：
+   ```
+   winget install Python.Python.3.12
+   pip install pywin32
+   ```
+3. **印出要填的值**：
+   ```
+   python C:\tools\outlook-skills\plugins\outlook-mcp\install.py
+   ```
+   第一段「Claude Chat / Cowork」就是表單要填的 Command 和 Arguments，都是絕對路徑。
+4. **先確認 COM 通了**再去填表單：
+   ```
+   python C:\tools\outlook-skills\plugins\outlook-mcp\server.py --call get_status "{}"
+   ```
+   看得到帳號和 store 就 OK。
+5. **Claude Desktop → Settings → Connectors → Add**，Transport 選 **Local command (stdio)**，照下表填，存檔。Chat 和 Cowork 的工具列會出現 outlook 的 tool。
 
 | 欄位 | 填什麼 |
 |---|---|
 | Name | `outlook` |
 | Transport | Local command (stdio) |
-| Command | Python 可執行檔的**絕對路徑**，例如 `C:\Users\me\AppData\Local\Programs\Python\Python312\python.exe`。這個欄位不接受 `python` 這種相對名稱；查法：`python -c "import sys; print(sys.executable)"` |
-| Arguments | `["C:\\tools\\outlook-skills\\plugins\\outlook-mcp\\server.py"]`（JSON 陣列，反斜線要寫兩個） |
+| Command | Python 可執行檔的**絕對路徑**，例如 `C:\Users\me\AppData\Local\Programs\Python\Python312\python.exe`。這個欄位不接受 `python` 這種相對名稱；`install.py` 印的就是這個，或用 `python -c "import sys; print(sys.executable)"` 查 |
+| Arguments | `["C:\\tools\\outlook-skills\\plugins\\outlook-mcp\\server.py"]`（JSON 陣列，反斜線要寫兩個；`install.py` 印的可直接貼） |
 | Environment variables | 通常留空。要用 reranker 又不想寫進 settings.json，可以在這裡設 `OUTLOOK_RERANK_URL`、`OUTLOOK_RERANK_MODEL`、`OUTLOOK_RERANK_API_KEY` |
 | Environment helper script | 留空 |
 | Startup timeout | 預設即可。server 啟動時不碰 Outlook，第一次呼叫 tool 才連，所以啟動很快 |
 | Tool policy | 全部 tool 都是唯讀的，可以放心設成不必逐次核准；`find_attachments`（`saveto` 會把附件複製到磁碟）和 `parse_msg_file`（`extract_to` 同理）想保留核准就留給使用者控制 |
 
-存檔後在 Chat 或 Cowork 的工具列會出現 outlook 的 tool。這是 Chat 分頁唯一能讀本機 Outlook 的方式；以 skill zip 上傳到 Chat 只有 `outlook-open-msg` 能用。
+這是 Chat 分頁唯一能讀本機 Outlook 的方式；以 skill zip 上傳到 Chat 只有 `outlook-open-msg` 能用。更新：到 `C:\tools\outlook-skills` 跑 `git pull`（或重新下載 ZIP 覆蓋），重開 Claude Desktop；路徑沒變就不用改 connector。
 
 舊版 Claude Desktop 沒有這個表單，改編輯 `%APPDATA%\Claude\claude_desktop_config.json`：
 
