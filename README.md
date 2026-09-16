@@ -10,7 +10,36 @@
 | Claude Desktop（Code 分頁） | 同 Claude Code | 同 Claude Code |
 | Claude Desktop（Chat 分頁）/ claude.ai | `python outlook-skills/install.py --zip`，到 Customize → Skills → + 上傳 `dist/` 裡的 zip | 重新打包上傳 |
 
-Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用。
+Chat 分頁與 Cowork 碰不到本機 Outlook，那裡只有 `outlook-open-msg`（解析附上的 .msg / .eml）能用；其他 skill 請在 Code 分頁或 Claude Code 使用（或改用下面的 MCP 版）。
+
+<details>
+<summary><b>🔌 也有 MCP 版</b> — 同一套功能包成 MCP server（Claude Desktop Chat 分頁、其他 MCP host 可用），點開看對應表與安裝方式</summary>
+
+<br>
+
+`outlook-mcp` 是第二個 plugin，跑的是同一套 Python script、同一份設定、同一條唯讀政策，差別是以 MCP tool 而不是 skill 接到 Claude。**擇一安裝**：兩個都裝也能動，但 MCP 的 tool 會一直佔 context。
+
+| Skill | 對應 MCP tool | 差異 |
+|---|---|---|
+| `outlook-status` | `get_status` | 相同 |
+| `outlook-search` | `search_mail`、`find_attachments` | 模糊搜尋：設定有填 `rerank.gateway` 就自動 rerank，不逐次問；沒填就只有子字串搜尋 |
+| `outlook-thread` | `get_thread` | 相同 |
+| `outlook-agenda` | `list_calendar` | 相同 |
+| `outlook-availability` | `list_calendar` | 空檔由模型從行事曆算，沒有 skill 裡的計算規則 |
+| `outlook-morning-brief` | `list_calendar` + `search_mail` + `list_followups` | 沒有簡報流程，模型自己組合 |
+| `outlook-meeting-prep` | `prepare_meeting` | 相同 |
+| `outlook-open-msg` | `parse_msg_file` | 讀磁碟上的檔案；沒有釣魚信判讀指引 |
+| `outlook-setup` | `mailbox_overview` | 只有掃描統計，沒有設定精靈、不寫記憶 |
+| `outlook-memory` | 無 | 記憶與設定精靈是 skill 專屬；`store` 設定 MCP 會自動套用 |
+
+| Host | 安裝 | 更新 |
+|---|---|---|
+| Claude Code | `pip install pywin32`<br>`/plugin marketplace add bwinken/outlook-skills`<br>`/plugin install outlook-mcp@outlook-skills` | `/plugin marketplace update outlook-skills`<br>`/plugin update outlook-mcp@outlook-skills` |
+| Claude Desktop（Chat 分頁）、其他 MCP host | clone 這個 repo，`python outlook-skills/plugins/outlook-mcp/install.py --claude-desktop`，重開 Claude Desktop | `git pull` |
+
+tool 參數與細節見 [plugins/outlook-mcp/README.md](plugins/outlook-mcp/README.md)。
+
+</details>
 
 裝不起來看 [docs/install-troubleshooting.md](docs/install-troubleshooting.md)（settings 衝突、proxy、離線手動安裝）。
 
@@ -56,6 +85,8 @@ All skills only read. They never send, save, move, delete, flag or mark anything
 | `language` | zh-TW | 回覆語言 |
 
 用 `outlook-memory` skill 改（「把工作時間改成 9 點到 5 點半」），或直接編輯檔案。
+
+`outlook-mcp` 讀同一份設定：`store` 會自動套到每個 tool；`rerank.gateway` 有填時 `search_mail` 帶 `query` 就自動 rerank（不逐次問，填了就算同意），沒填就回一般子字串搜尋結果。
 
 ## 記憶
 

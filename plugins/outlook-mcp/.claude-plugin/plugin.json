@@ -1,0 +1,23 @@
+{
+  "name": "outlook-mcp",
+  "description": "Read-only MCP server for a local Windows Outlook (Classic) mailbox: search mail, read threads, calendar, replies owed and awaited, meeting prep, attachments, .msg/.eml parsing. Never writes, sends, moves or deletes anything. Alternative to the outlook skills plugin; install one or the other.",
+  "version": "0.1.0",
+  "author": {
+    "name": "bwinken"
+  },
+  "keywords": [
+    "outlook",
+    "email",
+    "calendar",
+    "mcp",
+    "msg",
+    "eml",
+    "read-only"
+  ],
+  "mcpServers": {
+    "outlook": {
+      "command": "python",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server.py"]
+    }
+  }
+}
