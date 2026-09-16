@@ -77,7 +77,9 @@ Troubleshooting: [docs/install-troubleshooting.md](docs/install-troubleshooting.
 記憶在 `~/.outlook-skills/memory/<分類>/<標題>.md`，讓 skill 認得「Alice」是誰、「供應商的信」在哪個資料夾。也是用說的：
 
 > 記住 Alice 是法務窗口，alice.chen@contoso.com
+>
 > 忘掉 Alice
+>
 > 你記得什麼
 
 沒同意的不寫；不存內文、附件、金鑰。檔案含人名與 email，工作目錄是 git repo 時把 `.outlook-skills/` 加進 `.gitignore`。
