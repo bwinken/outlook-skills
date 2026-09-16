@@ -5,7 +5,7 @@ description: Find when the user is free, READ-ONLY, from their Outlook (Classic)
 
 # outlook-availability
 
-Read-only free-slot finder. It reads the calendar and computes gaps; it never books anything.
+Read-only free-slot finder. It reads the calendar and computes gaps; it never books anything. When the user picks a slot and wants it booked, hand over to `outlook-schedule`.
 
 ## Where this runs
 

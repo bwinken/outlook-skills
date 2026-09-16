@@ -57,6 +57,10 @@ DEFAULTS = {
         "quote_original": True,           # replies carry the original message below the footer
         "dialog_timeout_seconds": 300,    # the confirmation window closes as "cancel" after this
     },
+    "meeting": {
+        "default_duration_minutes": 60,
+        "reminder_minutes": 15,
+    },
 }
 
 MEMORY_TEMPLATE = """# Outlook memory

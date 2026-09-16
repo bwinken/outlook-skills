@@ -1,7 +1,7 @@
 # outlook (plugin)
 
 Skills for a local Windows Classic Outlook mailbox. Skill list and settings: [repo README](../../README.md).
-Rules the skills follow at run time (read-only except `outlook-send`, which sends only after the user's click in a desktop window; phishing warnings): [POLICY.md](POLICY.md).
+Rules the skills follow at run time (read-only except `outlook-send` and `outlook-schedule`, which send only after the user's click in a desktop window; phishing warnings): [POLICY.md](POLICY.md).
 
 ## Requirements
 
@@ -20,6 +20,7 @@ python scripts/outlook_calendar.py -Days 7
 python scripts/outlook_followup.py -Direction both
 python scripts/outlook_meeting_prep.py -Next
 python scripts/outlook_send.py draft -ReplyTo <EntryID> -BodyFile body.txt   # then: send <id> -Confirm <token>
+python scripts/outlook_meeting.py draft -Subject "Q3 review" -Start 2026-09-18T14:00 -Attendees alice@contoso.com   # then: send <id> -Confirm <token>
 python scripts/outlook_attachments.py -Ext pdf -Sort size -Top 10
 python scripts/outlook_overview.py -Days 180
 python scripts/outlook_status.py -SkipCom
@@ -37,6 +38,7 @@ python scripts/memory.py find alice
 | `outlook_followup.py` | outlook-morning-brief |
 | `outlook_meeting_prep.py` | outlook-meeting-prep |
 | `outlook_send.py` | outlook-send: `draft` stores the exact outgoing text, `send` opens the confirmation window and sends after the click |
+| `outlook_meeting.py` | outlook-schedule: same two steps for a meeting or appointment, with an overlap check in the draft |
 | `outlook_overview.py`, `outlook_style.py` | outlook-setup (mailbox scan, reply-habit profile) |
 | `read_msg.py`, `msgfile.py` | outlook-open-msg (no Outlook needed, any OS) |
 | `settings.py`, `memory.py` | every skill, outlook-memory |

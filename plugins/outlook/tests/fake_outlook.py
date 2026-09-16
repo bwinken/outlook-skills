@@ -305,13 +305,37 @@ class Conversation:
         return Table(self._ids)
 
 
+class OutgoingAppointment:
+    """An AppointmentItem made by CreateItem(1). Send() (meeting) or Save() (appointment) records it."""
+    Class = 26
+
+    def __init__(self, app, directory):
+        self._app = app
+        self.Recipients = Recipients(directory)
+        self.Subject, self.Body, self.Location = "", "", ""
+        self.Start = self.End = None
+        self.MeetingStatus, self.ReminderSet, self.ReminderMinutesBeforeStart = 0, True, 15
+        self.EntryID = "new-appt"
+        self.Sent = self.Saved = False
+
+    def Send(self):
+        self.Sent = True
+        self._app.sent.append(self)
+
+    def Save(self):
+        self.Saved = True
+        self._app.saved.append(self)
+
+
 class Application:
-    """Only what outlook_send.py needs: CreateItem, and the list of items Send() was called on."""
+    """Only what outlook_send.py / outlook_meeting.py need: CreateItem, and what Send() / Save() were called on."""
 
     def __init__(self, directory):
-        self.directory, self.sent, self.Version = directory, [], "16.0.fake"
+        self.directory, self.sent, self.saved, self.Version = directory, [], [], "16.0.fake"
 
     def CreateItem(self, item_type):
+        if item_type == 1:
+            return OutgoingAppointment(self, self.directory)
         assert item_type == 0, item_type
         return Outgoing(self, self.directory)
 

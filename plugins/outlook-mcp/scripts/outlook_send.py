@@ -61,10 +61,37 @@ def save(d: dict):
         fh.write(json.dumps(d, ensure_ascii=False, indent=2))
 
 
+def new_id() -> str:
+    return dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2)
+
+
+_TOKEN_FIELDS = {"mail": ("to", "cc", "subject", "full_body"),
+                 "meeting": ("required", "optional", "subject", "start", "end", "location", "full_body")}
+
+
 def token(d: dict) -> str:
     """Hash of everything that goes out. Recomputed by `send`; a mismatch aborts."""
-    key = json.dumps({"to": d["to"], "cc": d["cc"], "subject": d["subject"], "full_body": d["full_body"]}, ensure_ascii=False, sort_keys=True)
+    fields = _TOKEN_FIELDS[d.get("kind", "mail")]
+    key = json.dumps({k: d[k] for k in fields}, ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+
+
+def load_sendable(draft_id: str, kind: str, confirm: str) -> dict:
+    """The draft, if it is of this kind, still a draft, and the token matches both the argument and the content."""
+    d = load(draft_id)
+    if d.get("kind", "mail") != kind:
+        raise SystemExit(f"draft {d['id']} is a {d.get('kind', 'mail')} draft; use outlook_{'send' if d.get('kind', 'mail') == 'mail' else 'meeting'}.py")
+    if d.get("status") != "draft":
+        raise SystemExit(f"draft {d['id']} is '{d.get('status')}', not sendable. Make a new draft.")
+    if confirm != d["confirm"] or token(d) != d["confirm"]:
+        raise SystemExit("Confirmation token does not match the draft as shown; nothing was sent. Re-run draft and show it again.")
+    return d
+
+
+def cancel(d: dict, what: str):
+    d["status"], d["cancelled"] = "cancelled", dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    save(d)
+    raise SystemExit(f"Cancelled in the confirmation window (or it timed out); nothing was {what}. Ask the user before making a new draft.")
 
 
 # ---------------------------------------------------------------- recipients
@@ -113,7 +140,7 @@ def _addresses(rows):
 
 
 # ---------------------------------------------------------------- draft
-def _approver(ns, cfg) -> str:
+def approver_name(ns, cfg) -> str:
     v = cfg.get("approver")
     if v:
         return str(v)
@@ -122,6 +149,10 @@ def _approver(ns, cfg) -> str:
         if v:
             return str(v)
     return os.environ.get("USERNAME") or os.environ.get("USER") or "the user"
+
+
+def footer_text(cfg, approver: str) -> str:
+    return str(cfg.get("footer") or "--\nDrafted by Claude, reviewed and approved by {approver}.").replace("\\n", "\n").format(approver=approver)
 
 
 def _quote(orig) -> str:
@@ -184,11 +215,11 @@ def run_draft(a, ns=None):
     if not to:
         raise SystemExit("No recipient.")
 
-    approver = _approver(ns, cfg)
-    footer = str(cfg.get("footer") or "--\nDrafted by Claude, reviewed and approved by {approver}.").replace("\\n", "\n").format(approver=approver)
+    approver = approver_name(ns, cfg)
+    footer = footer_text(cfg, approver)
     full_body = body + "\n\n" + footer + ("\n\n" + quote if quote else "")
     d = {
-        "id": dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2),
+        "id": new_id(), "kind": "mail",
         "status": "draft", "created": dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
         "mode": ("reply_all" if a.reply_all else "reply") if a.reply_to else "new",
         "reply_to": reply or None,
@@ -202,47 +233,54 @@ def run_draft(a, ns=None):
 
 
 # ---------------------------------------------------------------- the confirmation window
-def render_text(d: dict) -> str:
-    fmt = lambda rows: "; ".join(f"{r['Name']} <{r['Address']}>" if r["Name"] and r["Name"] != r["Address"] else r["Address"] for r in rows) or "(none)"
-    return f"To:      {fmt(d['to'])}\nCc:      {fmt(d['cc'])}\nSubject: {d['subject']}\n\n{d['full_body']}"
+def fmt_people(rows) -> str:
+    return "; ".join(f"{r['Name']} <{r['Address']}>" if r["Name"] and r["Name"] != r["Address"] else r["Address"] for r in rows) or "(none)"
 
 
-def confirm_dialog(d: dict, timeout_seconds: int) -> bool:
-    """A window on the user's desktop. Returns True only when the user clicks Send. Closing the window,
+def mail_dialog_spec(d: dict) -> dict:
+    return {"title": "Outlook 確認寄出 / Confirm send",
+            "rows": [("收件者 To", fmt_people(d["to"])), ("副本 Cc", fmt_people(d["cc"])), ("主旨 Subject", d["subject"])],
+            "text": d["full_body"],
+            "note": "這封信會以上面的內容原樣寄出，寄出後無法收回。",
+            "ok": "寄出 Send", "question": "寄出？ Send this mail?"}
+
+
+def confirm_dialog(spec: dict, timeout_seconds: int) -> bool:
+    """A window on the user's desktop showing spec["rows"] (label, value) and spec["text"], with an OK
+    button (spec["ok"]) and Cancel. Returns True only when the user clicks OK. Closing the window,
     Cancel, or the timeout all return False. Tests replace this function; nothing else does."""
     if platform.system() != "Windows":
-        raise SystemExit("Sending needs Windows with Classic Outlook.")
+        raise SystemExit("This step needs Windows with Classic Outlook.")
     try:
         import tkinter as tk
         from tkinter import scrolledtext
     except Exception:
-        return _messagebox(d)
+        return _messagebox(spec)
     result = {"ok": False}
     root = tk.Tk()
-    root.title("Outlook 確認寄出 / Confirm send")
+    root.title(spec["title"])
     root.attributes("-topmost", True)
     head = tk.Frame(root, padx=12, pady=8)
     head.pack(fill="x")
-    fmt = lambda rows: "; ".join(f"{r['Name']} <{r['Address']}>" for r in rows) or "(none)"
-    for label, value in (("收件者 To", fmt(d["to"])), ("副本 Cc", fmt(d["cc"])), ("主旨 Subject", d["subject"])):
+    for label, value in spec["rows"]:
         row = tk.Frame(head)
         row.pack(fill="x")
-        tk.Label(row, text=label + ":", width=12, anchor="w", font=("", 10, "bold")).pack(side="left")
-        tk.Label(row, text=value, anchor="w", justify="left", wraplength=760).pack(side="left", fill="x")
-    box = scrolledtext.ScrolledText(root, width=100, height=28, wrap="word", font=("", 10))
-    box.insert("1.0", d["full_body"])
+        tk.Label(row, text=label + ":", width=14, anchor="w", font=("", 10, "bold")).pack(side="left")
+        tk.Label(row, text=value, anchor="w", justify="left", wraplength=740).pack(side="left", fill="x")
+    box = scrolledtext.ScrolledText(root, width=100, height=24, wrap="word", font=("", 10))
+    box.insert("1.0", spec["text"])
     box.configure(state="disabled")
     box.pack(fill="both", expand=True, padx=12)
     foot = tk.Frame(root, padx=12, pady=10)
     foot.pack(fill="x")
-    tk.Label(foot, text=f"這封信會以上面的內容原樣寄出，寄出後無法收回。{timeout_seconds // 60} 分鐘沒動作視為取消。", anchor="w").pack(side="left")
+    tk.Label(foot, text=f"{spec['note']}{timeout_seconds // 60} 分鐘沒動作視為取消。", anchor="w").pack(side="left")
 
-    def send():
+    def ok():
         result["ok"] = True
         root.destroy()
 
     tk.Button(foot, text="取消 Cancel", width=14, command=root.destroy).pack(side="right")
-    tk.Button(foot, text="寄出 Send", width=14, command=send, default="active").pack(side="right", padx=8)
+    tk.Button(foot, text=spec["ok"], width=14, command=ok, default="active").pack(side="right", padx=8)
     root.protocol("WM_DELETE_WINDOW", root.destroy)
     root.after(max(10, int(timeout_seconds)) * 1000, root.destroy)
     root.lift()
@@ -251,14 +289,14 @@ def confirm_dialog(d: dict, timeout_seconds: int) -> bool:
     return result["ok"]
 
 
-def _messagebox(d: dict) -> bool:
+def _messagebox(spec: dict) -> bool:
     """Fallback when tkinter is missing: a Yes/No message box (text limited, long bodies are cut)."""
     import ctypes
-    text = render_text(d)
+    text = "\n".join(f"{k}: {v}" for k, v in spec["rows"]) + "\n\n" + spec["text"]
     if len(text) > 3500:
-        text = text[:3500] + "\n\n[... cut for display; the mail itself is complete ...]"
+        text = text[:3500] + "\n\n[... cut for display; the item itself is complete ...]"
     MB_YESNO, MB_ICONWARNING, MB_DEFBUTTON2, MB_SETFOREGROUND, MB_TOPMOST = 0x4, 0x30, 0x100, 0x10000, 0x40000
-    r = ctypes.windll.user32.MessageBoxW(0, text + "\n\n寄出？ Send this mail?", "Outlook 確認寄出 / Confirm send", MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST)
+    r = ctypes.windll.user32.MessageBoxW(0, text + "\n\n" + spec["question"], spec["title"], MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST)
     return r == 6  # IDYES
 
 
@@ -293,19 +331,13 @@ def _verify(mail, d):
 
 
 def run_send(a, ns=None):
-    d = load(a.id)
-    if d.get("status") != "draft":
-        raise SystemExit(f"draft {d['id']} is '{d.get('status')}', not sendable. Make a new draft.")
-    if a.confirm != d["confirm"] or token(d) != d["confirm"]:
-        raise SystemExit("Confirmation token does not match the draft as shown; nothing was sent. Re-run draft and show it again.")
+    d = load_sendable(a.id, "mail", a.confirm)
     cfg = (ps.resolve()[0].get("send") or {})
     timeout = int(cfg.get("dialog_timeout_seconds") or 300)
 
     # the user's click, on their own screen; there is no way around this call
-    if not confirm_dialog(d, timeout):
-        d["status"], d["cancelled"] = "cancelled", dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        save(d)
-        raise SystemExit("Cancelled in the confirmation window (or it timed out); nothing was sent. Ask the user before making a new draft.")
+    if not confirm_dialog(mail_dialog_spec(d), timeout):
+        cancel(d, "sent")
 
     ns = ns or oc.connect()
     app = oc.application()
@@ -340,7 +372,7 @@ def run_list(a):
         try:
             with open(p, "r", encoding="utf-8") as fh:
                 d = json.load(fh)
-            rows.append({k: d.get(k) for k in ("id", "status", "created", "mode", "subject", "sent_at")} | {"To": [r["Address"] for r in d.get("to", [])]})
+            rows.append({k: d.get(k) for k in ("id", "kind", "status", "created", "mode", "subject", "sent_at", "start")} | {"To": [r["Address"] for r in d.get("to") or d.get("required") or []]})
         except Exception:
             continue
     return {"Dir": str(dd), "Count": len(rows), "Drafts": rows}

@@ -88,7 +88,10 @@ class SendTest(unittest.TestCase):
 
         d = self.draft("-To", "Cassie Tsai", "-Cc", "pc.liao@contoso.com", "-Subject", "Hi", "-Body", "一句話。")
         r, dlg = self.send(d, clicked=True)
-        self.assertEqual(dlg.call_args[0][0]["id"], d["id"])
+        spec = dlg.call_args[0][0]  # what the window showed: exactly the draft
+        self.assertEqual(spec["text"], d["full_body"])
+        self.assertIn("cassie.tsai@contoso.com", dict(spec["rows"])["收件者 To"])
+        self.assertIn("pc.liao@contoso.com", dict(spec["rows"])["副本 Cc"])
         self.assertTrue(r["Sent"])
         self.assertEqual(len(self.app.sent), 1)
         m = self.app.sent[0]

@@ -1,7 +1,7 @@
 {
   "name": "outlook",
-  "description": "Skills for a local Windows Outlook (Classic) mailbox. Reads mail, threads, calendar and .msg/.eml files; sends or replies only after the user approves the draft and clicks Send in a desktop window. Never moves, deletes or marks anything.",
-  "version": "0.7.0",
+  "description": "Skills for a local Windows Outlook (Classic) mailbox. Reads mail, threads, calendar and .msg/.eml files; sends, replies or creates a meeting only after the user approves the draft and clicks in a desktop window. Never moves, deletes or marks anything.",
+  "version": "0.8.0",
   "author": {
     "name": "bwinken"
   },
@@ -11,6 +11,7 @@
     "calendar",
     "msg",
     "eml",
-    "send"
+    "send",
+    "meeting"
   ]
 }
