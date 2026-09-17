@@ -169,6 +169,29 @@ class SendTest(unittest.TestCase):
             self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x", "-Attach", big)
         self.assertIn("MB limit", str(cm.exception))
 
+    def test_reply_to_a_mail_with_inline_pictures_carries_exactly_the_draft_attachments(self):
+        # id7 has an inline image001.png, so Outlook's Reply()/ReplyAll() item starts with it as an attachment
+        self.assertEqual([a.FileName for a in self.ns.GetItemFromID("id7").Reply().Attachments], ["image001.png"])
+        d = self.draft("-ReplyTo", "id7", "-ReplyAll", "-Body", "收到，謝謝。")
+        self.assertEqual(d["attachments"], [])
+        r, dlg = self.send(d, clicked=True)
+        self.assertEqual(dict(dlg.call_args[0][0]["rows"])["附件 Attachments"], "(none)")
+        self.assertEqual([a.FileName for a in self.app.sent[0].Attachments], [])
+        self.assertEqual((r["Attachments"], r["InheritedAttachmentsRemoved"]), ([], ["image001.png"]))
+        # the user attaches a file with the same name as the inherited picture: exactly that one copy goes out
+        f = os.path.join(tempfile.mkdtemp(), "image001.png")
+        Path(f).write_bytes(b"\x89PNG mine")
+        d = self.draft("-ReplyTo", "id7", "-Body", "見附件。", "-Attach", f)
+        r, _ = self.send(d, clicked=True)
+        self.assertEqual([(a.FileName, a.PathName) for a in self.app.sent[1].Attachments], [("image001.png", f)])
+        self.assertEqual((r["Attachments"], r["InheritedAttachmentsRemoved"]), (["image001.png"], ["image001.png"]))
+        # Outlook refusing the removal: the leftover is named as inherited and nothing is sent
+        d = self.draft("-ReplyTo", "id7", "-Body", "ok")
+        with mock.patch.object(fo.OutgoingAttachments, "Remove", side_effect=Exception("COM says no")), self.assertRaises(SystemExit) as cm:
+            self.send(d, clicked=True)
+        self.assertIn("not in the approved draft: ['image001.png'] (inherited from the original mail", str(cm.exception))
+        self.assertEqual(len(self.app.sent), 2)
+
     def test_list_show_discard(self):
         d = self.draft("-To", "Cassie Tsai", "-Subject", "Hi", "-Body", "x")
         lst = snd.run_list(None)

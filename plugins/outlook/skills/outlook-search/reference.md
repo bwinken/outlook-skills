@@ -129,8 +129,8 @@ Rules:
 
 ```
 {
-  "Query": { <search filters> + Name, Ext[], MinSizeKB, Sort, Top, SaveTo },
-  "MailsScanned": <mails with attachments that matched the search>,
+  "Query": { EntryID, <search filters> + Name, Ext[], MinSizeKB, Sort, Top, SaveTo },
+  "MailsScanned": <mails with attachments that matched the search; 1 with -EntryID>,
   "Count": <attachments after filtering>, "TotalSizeKB": <sum>,
   "Results": [ { FileName, Ext, SizeKB, ReceivedTime, From, FromAddress, Subject, Folder, EntryID, SavedTo? }, ... ]
 }

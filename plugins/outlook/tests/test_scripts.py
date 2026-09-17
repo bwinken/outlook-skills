@@ -149,6 +149,15 @@ class FollowupTest(FakeOutlookTest):
         self.assertNotIn("Results", f)
 
 
+class EntryIdTest(FakeOutlookTest):
+    def test_one_mail_by_entryid_skips_folders_and_filters(self):
+        r = search("-EntryID", "id7", "-From", "nobody", "-HasAttachments")  # the other filters are ignored
+        self.assertEqual((r["Count"], r["Query"]["EntryID"], r["Query"]["Dasl"], r["Query"]["Folders"]), (1, "id7", "", ["\\\\20230731\\收件匣"]))
+        self.assertEqual([a["FileName"] for a in r["Results"][0]["Attachments"]], ["Q3_report.pptx", "image001.png"])
+        with self.assertRaises(SystemExit):
+            search("-EntryID", "no-such-id")
+
+
 class AttachmentsTest(FakeOutlookTest):
     def test_filter_sort_save(self):
         at = outlook_attachments.run(outlook_attachments.parser().parse_args(["-Store", "20230731", "-Sort", "size"]))
@@ -161,6 +170,11 @@ class AttachmentsTest(FakeOutlookTest):
         at = outlook_attachments.run(outlook_attachments.parser().parse_args(["-Store", "20230731", "-Ext", "pptx", "-SaveTo", d]))
         with open(at["Results"][0]["SavedTo"], "rb") as fh:
             self.assertEqual(fh.read(), b"pptx")
+        # one mail by EntryID: no search filter, so a mail Outlook would not flag as having attachments is reached too
+        at = outlook_attachments.run(outlook_attachments.parser().parse_args(["-EntryID", "id7", "-Ext", "png", "-SaveTo", d]))
+        self.assertEqual((at["MailsScanned"], [r["FileName"] for r in at["Results"]]), (1, ["image001.png"]))
+        with open(at["Results"][0]["SavedTo"], "rb") as fh:
+            self.assertEqual(fh.read(), b"png")
 
 
 class StyleTest(FakeOutlookTest):

@@ -4,6 +4,7 @@
     python outlook_search.py -From alice -After 2026-09-01 -Max 20
     python outlook_search.py -Subject invoice -HasAttachments -AllFolders
     python outlook_search.py -AnyOf 報價,quote,pricing -After 2026-06-01 -AllStores -Max 300 -PreviewLength 500 -OutFile candidates.json
+    python outlook_search.py -EntryID <id> -IncludeBody      # exactly that mail, no folder walk and no filter
 """
 import outlook_com as oc
 
@@ -62,44 +63,65 @@ def resolve_folders(a, ns):
     return folders
 
 
+def mail_by_id(entry_id: str, ns=None):
+    """One mail by EntryID (from an earlier result), with a plain message instead of a COM error when it is not there."""
+    ns = ns or oc.connect()
+    try:
+        item = ns.GetItemFromID(entry_id)
+    except Exception as e:
+        raise SystemExit(f"No item with that EntryID in this Outlook profile ({e}). Use an EntryID from a search or thread result.")
+    if int(oc._safe(lambda: item.Class, 0)) != oc.OL_MAIL_ITEM:
+        raise SystemExit("That EntryID is not a mail item.")
+    return item
+
+
 def run(a, ns=None):
     ns = ns or oc.connect()
     after = oc.parse_date(a.after) if a.after else None
     before = oc.parse_date(a.before) if a.before else None
-    dasl = build_dasl(a, after, before)
-    folders = resolve_folders(a, ns)
-    results = []
-    for f in folders:
-        if len(results) >= a.max:
-            break
-        items = f.Items
-        if dasl:
-            try:
-                items = items.Restrict(dasl)
-            except Exception:
-                if not (after or before):
-                    raise
-                dasl = build_dasl(a)  # this store did not take the date literal: filter dates in the loop only
-                if dasl:
-                    items = items.Restrict(dasl)
-        items.Sort("[ReceivedTime]", True)  # newest first
-        for item in oc.iter_mail(items):
+    entry_id = getattr(a, "entryid", "") or ""
+    if entry_id:
+        # exactly that mail, no folder walk and no filter: a filtered scan can miss it (a mail whose only
+        # attachments are inline pictures gets no paperclip, so -HasAttachments may not match it)
+        dasl, results = "", [oc.mail_summary(mail_by_id(entry_id, ns), a.includebody, a.previewlength)]
+        folder_paths = [results[0]["Folder"]]
+    else:
+        dasl = build_dasl(a, after, before)
+        folders = resolve_folders(a, ns)
+        folder_paths = [str(f.FolderPath) for f in folders]
+        results = []
+        for f in folders:
             if len(results) >= a.max:
                 break
-            rt = oc.to_datetime(item.ReceivedTime)
-            if after and rt < after:
-                break  # sorted desc: nothing older will match
-            if before and rt >= before:
-                continue
-            results.append(oc.mail_summary(item, a.includebody, a.previewlength))
+            items = f.Items
+            if dasl:
+                try:
+                    items = items.Restrict(dasl)
+                except Exception:
+                    if not (after or before):
+                        raise
+                    dasl = build_dasl(a)  # this store did not take the date literal: filter dates in the loop only
+                    if dasl:
+                        items = items.Restrict(dasl)
+            items.Sort("[ReceivedTime]", True)  # newest first
+            for item in oc.iter_mail(items):
+                if len(results) >= a.max:
+                    break
+                rt = oc.to_datetime(item.ReceivedTime)
+                if after and rt < after:
+                    break  # sorted desc: nothing older will match
+                if before and rt >= before:
+                    continue
+                results.append(oc.mail_summary(item, a.includebody, a.previewlength))
     return {
         "Query": {
+            "EntryID": entry_id or None,
             "From": a.from_, "To": a.to, "Subject": a.subject, "Body": a.body, "Text": a.text,
             "AnyOf": [t.strip() for chunk in (a.anyof or []) for t in chunk.split(",") if t.strip()],
             "After": after.strftime("%Y-%m-%dT%H:%M:%S") if after else None,
             "Before": before.strftime("%Y-%m-%dT%H:%M:%S") if before else None,
             "HasAttachments": a.hasattachments, "Unread": a.unread, "HighImportance": getattr(a, "highimportance", False), "Flagged": getattr(a, "flagged", False),
-            "Folders": [str(f.FolderPath) for f in folders], "AllStores": a.allstores, "Dasl": dasl, "Max": a.max,
+            "Folders": folder_paths, "AllStores": a.allstores, "Dasl": dasl, "Max": a.max,
         },
         "Count": len(results), "Results": results,
     }
@@ -107,6 +129,7 @@ def run(a, ns=None):
 
 def parser():
     ap = oc.ArgParser(description=__doc__)
+    ap.opt("-EntryID", default="", help="read exactly this mail (EntryID from an earlier result) instead of searching; every other filter is ignored")
     ap.opt("-From", dest="from_", default="", help="sender name or address contains")
     ap.opt("-To", default="", help="To/CC display string contains")
     ap.opt("-Subject", default="")

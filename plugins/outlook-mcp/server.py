@@ -48,7 +48,7 @@ INSTRUCTIONS = (
     "Folder names may be English (Inbox, Sent Items) or as shown in a localized Outlook (收件匣, 寄件備份). "
     "When mail lives in a .pst, pass store (its display name from get_status) or allstores=true; "
     "a `store` default from ~/.outlook-skills/settings.json is applied automatically when neither is given. "
-    "EntryID values from search_mail go to get_thread. "
+    "EntryID values from search_mail go to get_thread, or back to search_mail / find_attachments as entryid to read exactly that mail or copy its attachments out. "
     "Prefer narrow filters (from, after, anyof) and a small max over includebody. "
     "search_mail accepts a natural-language `query`: when the user configured a reranker gateway "
     "(settings rerank.gateway or OUTLOOK_RERANK_URL) the candidates are reranked by it automatically; "

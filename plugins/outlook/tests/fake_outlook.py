@@ -3,8 +3,12 @@ import datetime as dt
 
 
 class Attachment:
-    def __init__(self, name, size=100, atype=1, data=b"data"):
+    def __init__(self, name, size=100, atype=1, data=b"data", inline=False):
         self.FileName, self.Size, self.Type, self._data = name, size, atype, data
+        # inline: a cid: picture of an HTML mail, hidden and with a content id, as Outlook stores them
+        self._inline = inline
+        self.PropertyAccessor = PropertyAccessor({"http://schemas.microsoft.com/mapi/proptag/0x7FFE000B": True,
+                                                  "http://schemas.microsoft.com/mapi/proptag/0x3712001F": f"{name}@01D0"} if inline else {})
 
     def SaveAsFile(self, path):
         with open(path, "wb") as fh:
@@ -83,12 +87,24 @@ class Directory:
 
 
 class OutgoingAttachments(list):
+    """Attachments of an outgoing item: Add(path), Count, Item(i) and Remove(i), 1-based like COM."""
+
+    @property
+    def Count(self):
+        return len(self)
+
+    def Item(self, i):
+        return self[i - 1]
+
     def Add(self, path):
         import os
         a = Attachment(os.path.basename(path), os.path.getsize(path), data=open(path, "rb").read())
         a.PathName = path
         self.append(a)
         return a
+
+    def Remove(self, index):
+        del self[index - 1]
 
 
 class Outgoing:
@@ -144,16 +160,19 @@ class Mail:
     def GetConversation(self):
         return self._conversation
 
-    def Reply(self):
+    def _reply_item(self, recipients):
         app = self.Parent.Store._app
-        return Outgoing(app, app.directory, "RE: " + self.Subject, "\n-----Original Message-----\n" + self.Body,
-                        [Recipient(self.SenderName, self.SenderEmailAddress, 1)])
+        out = Outgoing(app, app.directory, "RE: " + self.Subject, "\n-----Original Message-----\n" + self.Body, recipients)
+        # as in Outlook: the quoted original brings its inline pictures along as attachments, never its regular files
+        out.Attachments.extend(Attachment(a.FileName, a.Size, a.Type, a._data, inline=True) for a in self.Attachments if a._inline)
+        return out
+
+    def Reply(self):
+        return self._reply_item([Recipient(self.SenderName, self.SenderEmailAddress, 1)])
 
     def ReplyAll(self):
-        app = self.Parent.Store._app
         others = [Recipient(r.Name, r.Address, r.Type) for r in self.Recipients if r.Address.lower() != "me@contoso.com"]
-        return Outgoing(app, app.directory, "RE: " + self.Subject, "\n-----Original Message-----\n" + self.Body,
-                        [Recipient(self.SenderName, self.SenderEmailAddress, 1)] + others)
+        return self._reply_item([Recipient(self.SenderName, self.SenderEmailAddress, 1)] + others)
 
 
 class Appointment:
@@ -388,7 +407,7 @@ def build_fixture():
     m3 = Mail("id3", "Q3 預算討論", "David WY Chen", "david.chen@contoso.com", d(2026, 9, 8, 9, 12), body="三個方案 A B C 報價", conv_id="C2")
     m4 = Mail("id4", "Weekly newsletter", "News", "news@example.com", d(2026, 9, 1, 8, 0), body="quote of the week", unsubscribe=True)
     m6 = Mail("id6", "AI 人才發展：可以幫我看一下名單嗎？", "PC Liao", "pc.liao@contoso.com", d(2026, 9, 10, 11, 0), body="Ben，麻煩看一下附件名單，週五前回我好嗎？", conv_id="C6", recipients=[Recipient("Ben", "me@contoso.com")], attachments=[Attachment("人才名單.xlsx", 51200, data=b"xlsx")])
-    m7 = Mail("id7", "FYI: 季報", "David WY Chen", "david.chen@contoso.com", d(2026, 9, 11, 9, 0), body="供參考，不用回", conv_id="C7", recipients=[Recipient("Ben", "me@contoso.com")], attachments=[Attachment("Q3_report.pptx", 4823040, data=b"pptx"), Attachment("image001.png", 9120, atype=1, data=b"png")])
+    m7 = Mail("id7", "FYI: 季報", "David WY Chen", "david.chen@contoso.com", d(2026, 9, 11, 9, 0), body="供參考，不用回", conv_id="C7", recipients=[Recipient("Ben", "me@contoso.com")], attachments=[Attachment("Q3_report.pptx", 4823040, data=b"pptx"), Attachment("image001.png", 9120, atype=1, data=b"png", inline=True)])
     m5 = Mail("id5", "Old mail", "Cassie Tsai", "cassie.tsai@contoso.com", d(2024, 1, 5, 10, 0), body="old")
     conv = Conversation(["id1", "id2"])
     m1._conversation = conv; m2._conversation = conv

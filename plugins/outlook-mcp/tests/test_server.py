@@ -83,6 +83,7 @@ class ProtocolTest(ServerTest):
         self.assertEqual(tools["parse_msg_file"]["inputSchema"]["required"], ["files"])
         self.assertNotIn("format", tools["parse_msg_file"]["inputSchema"]["properties"])
         self.assertNotIn("hasattachments", tools["find_attachments"]["inputSchema"]["properties"])
+        self.assertIn("entryid", tools["find_attachments"]["inputSchema"]["properties"])
         for t in tools.values():
             self.assertIs(t["inputSchema"]["additionalProperties"], False)
             self.assertTrue(t["description"])
@@ -100,6 +101,8 @@ class CallTest(ServerTest):
         self.assertEqual(sorted(ids(out["Results"])), ["id3", "id4"])
         out, err = call("get_thread", subject="合約草稿", store="20230731")
         self.assertEqual(ids(out["Messages"]), ["id2", "id1"])
+        out, err = call("find_attachments", entryid="id7", ext="png")
+        self.assertEqual((out["MailsScanned"], [r["FileName"] for r in out["Results"]]), (1, ["image001.png"]))
         out, err = call("list_calendar", start="2026-09-16", days=1, store="20230731")
         self.assertEqual((len(out["Conflicts"]), out["Count"]), (1, 3))
         out, err = call("mailbox_overview", days=3650, store="20230731")
