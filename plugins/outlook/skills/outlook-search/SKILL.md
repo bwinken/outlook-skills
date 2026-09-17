@@ -88,9 +88,10 @@ When the host offers subagents (Claude Code's Agent tool, including the Code tab
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Name 合約 -After 2026-06-01
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -Ext pptx,xlsx -MinSizeKB 500 -Sort size -Top 20 -AllStores -AllFolders
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -From alice -Ext pdf -SaveTo "C:/Users/<me>/Desktop/from-alice"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_attachments.py" -EntryID <EntryID> -SaveTo "<tmp>"     # one mail, no search filter
 ```
 
-All search options apply, plus `-Name` (file name contains), `-Ext`, `-MinSizeKB`, `-Sort date|size|name`, `-Top N`, `-IncludeEmbedded` (inline images, OLE), `-SaveTo <folder>`.
+All search options apply, plus `-Name` (file name contains), `-Ext`, `-MinSizeKB`, `-Sort date|size|name`, `-Top N`, `-IncludeEmbedded` (inline images, OLE), `-SaveTo <folder>`. `-EntryID <id>` (from any earlier result) reads that one mail and skips every other filter: use it when the mail is already known, and when a filtered run says `MailsScanned: 0` for a mail whose only attachments are inline pictures (Outlook shows no paperclip for those, so the attachment filter can miss them).
 
 1. "Biggest" = `-Sort size -AllFolders` (add `-AllStores` for PST mail); "from X" = `-From`; "last month" = `-After` / `-Before`.
 2. Run without `-SaveTo` first and show the list (reference.md §5).

@@ -4,6 +4,7 @@
     python outlook_attachments.py -Name 合約 -After 2026-06-01
     python outlook_attachments.py -Ext pptx,xlsx -MinSizeKB 500 -Sort size -Top 20 -AllStores -AllFolders
     python outlook_attachments.py -From alice -SaveTo C:/tmp/att      # copies files out; Outlook is not modified
+    python outlook_attachments.py -EntryID <id> -SaveTo C:/tmp/att    # one mail's attachments, no search filter
 """
 import os
 import re

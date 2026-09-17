@@ -75,6 +75,8 @@ options:
 ✅ 已寄出（2026-09-16 14:05）給 cassie.tsai@contoso.com、pc.liao@contoso.com，主旨「RE: 合約草稿 v3 - 法務意見」，附件 報價.pdf。副本在寄件備份。
 ```
 
+`InheritedAttachmentsRemoved` lists the original's inline pictures that Outlook had copied into the reply item and that `send` removed before the check; they were never part of the draft, so mention them only if the user asks why a picture from the original is not in the reply.
+
 Exit 1 with "Cancelled in the confirmation window":
 
 ```
@@ -96,6 +98,6 @@ Any other error (unresolved recipient, item mismatch, Outlook not reachable): qu
 | `footer` | approval line from settings `send.footer` with the approver's name |
 | `quote` | quoted original (replies, when `send.quote_original` is true) |
 | `full_body` | `body` + `footer` + `quote`: the complete outgoing text, shown in the window and verified before Send |
-| `attachments[]` | `{Path, Name, Size, Sha256}`; re-hashed by `send` before attaching, names verified on the item |
+| `attachments[]` | `{Path, Name, Size, Sha256}`; re-hashed by `send` before attaching, names verified on the item (a reply item's inherited inline pictures are removed before that check) |
 | `approver` | name in the footer |
 | `confirm` | token for `send`; recomputed from the content, so an edited draft file is refused |

@@ -22,6 +22,9 @@ Two steps, always:
 The token printed by `draft` is a hash of the outgoing content; `send` recomputes it, so a draft file
 edited after it was shown cannot be sent. Attachments (--attach <file> ...) are recorded with their size
 and SHA-256 at draft time and re-hashed before they are attached; a changed or missing file aborts.
+A reply is built on Outlook's own Reply()/ReplyAll() item so it threads with the original; the inline
+pictures that item inherits from the original (cid: images, signature logos) are removed before the
+draft's files are added, so the item carries exactly the approved attachments and the check stays exact.
 """
 import datetime as dt
 import hashlib
@@ -29,6 +32,7 @@ import json
 import os
 import platform
 import secrets
+from collections import Counter
 
 import outlook_com as oc
 import settings as ps
@@ -355,6 +359,25 @@ def _set_recipients(mail, d):
         raise SystemExit("Outlook could not resolve every recipient; nothing was sent.")
 
 
+def _drop_inherited_attachments(mail) -> list:
+    """Outlook's Reply()/ReplyAll() item starts with the original's inline pictures (cid: images, signature
+    logos) as attachments; regular attachments are never carried over. They are not in the approved draft
+    and the outgoing text is plain, so everything the fresh item holds is removed here, before the draft's
+    own files are added. Returns the removed names. Anything Outlook refuses to remove stays on the item
+    and _verify then aborts the send."""
+    atts = mail.Attachments
+    removed = []
+    for i in range(int(oc._safe(lambda: atts.Count, 0) or 0), 0, -1):
+        name = str(oc._safe(lambda: atts.Item(i).FileName, "") or "")
+        try:
+            atts.Remove(i)
+        except Exception:
+            continue
+        removed.append(name)
+    removed.reverse()
+    return removed
+
+
 def _verify(mail, d):
     """Read back what Outlook holds and compare with the draft. Any difference means no Send()."""
     got_to = sorted(_addr_of(r).lower() or str(r.Address).lower() for r in mail.Recipients if int(r.Type) == OL_TO)
@@ -371,7 +394,16 @@ def _verify(mail, d):
     want = sorted(a["Name"].lower() for a in d.get("attachments") or [])
     got = sorted(str(att.FileName).lower() for att in oc._safe(lambda: list(mail.Attachments), []) or [])
     if got != want:
-        problems.append(f"Attachments differ: item {got} vs draft {want}")
+        extra = sorted((Counter(got) - Counter(want)).elements())
+        missing = sorted((Counter(want) - Counter(got)).elements())
+        msg = "Attachments differ"
+        if extra:
+            msg += f"; on the item but not in the approved draft: {extra}"
+            if d["mode"] != "new":
+                msg += " (inherited from the original mail; Outlook did not let this script remove it)"
+        if missing:
+            msg += f"; in the approved draft but not on the item: {missing}"
+        problems.append(msg)
     if problems:
         raise SystemExit("Item does not match the approved draft, nothing was sent: " + "; ".join(problems))
 
@@ -387,11 +419,13 @@ def run_send(a, ns=None):
 
     ns = ns or oc.connect()
     app = oc.application()
+    inherited = []
     if d["mode"] == "new":
         mail = app.CreateItem(oc.OL_ITEM_TYPE_MAIL)
     else:
         orig = ns.GetItemFromID(d["reply_to"]["EntryID"])
         mail = orig.ReplyAll() if d["mode"] == "reply_all" else orig.Reply()
+        inherited = _drop_inherited_attachments(mail)
     _set_recipients(mail, d)
     mail.Subject = d["subject"]
     try:
@@ -408,7 +442,8 @@ def run_send(a, ns=None):
     d["status"], d["sent_at"] = "sent", dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     save(d)
     return {"Sent": True, "Id": d["id"], "Mode": d["mode"], "To": d["to"], "Cc": d["cc"], "Subject": d["subject"],
-            "Attachments": [a["Name"] for a in atts], "SentAt": d["sent_at"], "Approver": d["approver"]}
+            "Attachments": [a["Name"] for a in atts], "InheritedAttachmentsRemoved": inherited,
+            "SentAt": d["sent_at"], "Approver": d["approver"]}
 
 
 # ---------------------------------------------------------------- other commands
