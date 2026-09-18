@@ -37,11 +37,13 @@ Options (all optional, combine freely):
 | `-AllStores` | search every store (Exchange mailbox and every attached .pst) instead of one |
 | `-AllFolders` | recurse every mail folder under `-Folder` |
 | `-Max 50` | result cap, newest first |
-| `-IncludeBody` | include full plain-text body (slower, larger) |
-| `-PreviewLength 500` | length of `BodyPreview` (default 200); use ~500 for reranking |
+| `-IncludeBody` | include full plain-text body (opens every result; larger) |
+| `-PreviewLength 500` | characters of `BodyPreview` per result; default 0 reads no body at all; use ~500 for reranking or when the previews will be read |
 | `-OutFile hits.json` | write the JSON to a file instead of stdout |
 
-Text matching is case-insensitive substring. Folder names may be given in English (`Inbox`, `Sent Items`) or as shown in a localized Outlook (`收件匣`, `寄件備份`); both resolve inside any store. When the user's mail lives mostly in a .pst (outlook-status shows the Exchange Inbox nearly empty and a big PST store), pass `-Store "<pst name>"` or `-AllStores`, and suggest saving `store` in settings so it becomes the default.
+Text matching is case-insensitive substring. `-Body`, `-Text` and `-AnyOf` match inside bodies, which Outlook cannot index: it reads every body in the date range, so pair them with `-After` (default: the last `search.default_lookback_days`).
+
+Cost: each folder is read through Outlook's Table object, hundreds of mails per call; a mail is opened only for `-PreviewLength`, `-IncludeBody` or its attachment list. Folder names may be given in English (`Inbox`, `Sent Items`) or as shown in a localized Outlook (`收件匣`, `寄件備份`); both resolve inside any store. When the user's mail lives mostly in a .pst (outlook-status shows the Exchange Inbox nearly empty and a big PST store), pass `-Store "<pst name>"` or `-AllStores`, and suggest saving `store` in settings so it becomes the default.
 
 ## Workflow
 
@@ -66,7 +68,7 @@ Substring matching misses typos, synonyms and mixed Chinese/English wording. Esc
    | over 100 | Narrow first: add a sender, tighter dates or more `-AnyOf` terms, or ask the user for one more constraint. If it cannot be narrowed, reranker if usable and agreed; otherwise local scan of the newest 100. |
 
 4. **Reranker** (sends data to a gateway, **consent required**):
-   - Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config`. It resolves the gateway (by default the `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, overridable with `OUTLOOK_RERANK_URL`), then probes `/v1/rerank` and `/v1/score` with a one-word test request and reports `usable`, `endpoint` and `gateway`. Exit code 1 means no usable reranker: say so in one line, mention the settings names (see plugin README), and go to step 5. Do not guess a URL.
+   - Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config`, in the same step as the candidate search when the count may exceed `direct_read_max` (it sends only the word "ping"). It resolves the gateway (by default the `ANTHROPIC_BASE_URL` from `~/.claude/settings.json`, overridable with `OUTLOOK_RERANK_URL`), then probes `/v1/rerank` and `/v1/score` with a one-word test request and reports `usable`, `endpoint` and `gateway`. Exit code 1 means no usable reranker: say so in one line, mention the settings names (see plugin README), and go to step 5. Do not guess a URL.
    - **Ask the user before sending anything** unless `rerank.auto_consent` is true in the settings (then state in one line what is being sent and where, and continue). One short message: the gateway URL and model from `--show-config`, that subject, sender, date and a ~500-character preview of the `Count` candidates will be sent in batches of 30, and whether to go ahead. Ask with the host's structured question tool (Claude Code: AskUserQuestion; Zoo Code / Roo Code: ask_followup_question), never as plain text. Proceed only on a clear yes; a no goes to step 5.
    - Rank: `python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --query "<the user's request in their own words>" --input "<tmp>/candidates.json" --top 10`.
    - If the script exits non-zero mid-run (gateway error, timeout after its built-in retries, unexpected response), do not retry by hand: tell the user in one line which step failed and go to step 5.
@@ -100,17 +102,17 @@ All search options apply, plus `-Name` (file name contains), `-Ext`, `-MinSizeKB
 
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once per conversation (no Outlook access, instant), **in the same step as the first script run**, as parallel tool calls: the scripts take `store` (search also `search.default_folder` and `search.all_folders`) from the settings themselves, so nothing waits for it. A tool call that runs alone costs a whole model turn; batch the independent ones.
 
-- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-setup` (settings wizard, mailbox scan, reply-habit profile), which asks the user first. Respect a "not now" and continue here.
-- Apply the merged `settings` (`search.*` for default folder, lookback window, candidate cap and the direct-read threshold; `store`; `rerank.*` including `auto_consent`, which replaces the per-run consent question when true; `language`).
-- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- `first_run: true` means `~/.outlook-skills` does not exist yet: present this result, then offer `outlook-setup` (settings wizard, mailbox scan, reply-habit profile) once per conversation; respect a "not now".
+- Apply the merged `settings` (`search.default_lookback_days`, `search.max_candidates`, `search.direct_read_max`; `rerank.*` including `auto_consent`, which replaces the per-run consent question when true; `language`). `store`, `search.default_folder` and `search.all_folders` are applied by the script itself when the command line leaves them out.
+- `memory` in that output is the complete index (title, category, tags, path). Open a note with `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" show "<title>"` only when a title or tag matches a person, folder, project or routine the request names, so "Alice" or "供應商的信" resolve to the right address or folder; no `find` first, never every note.
 - If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-search/reference.md` before presenting results. It documents every JSON field the script returns and the presentation template to use in the reply.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-search/reference.md` documents every JSON field the script returns and the presentation template to use in the reply. Read it once per conversation, in the same step as the script run (parallel tool calls), not as a separate turn before answering.
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Do not open items with `Display()`, do not change `UnRead`, do not move or delete. If the user asks to act on a mail (reply, delete, flag), explain that this plugin only reads and let them do it in Outlook.
+Read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it): Do not open items with `Display()`, do not change `UnRead`, do not move or delete. If the user asks to act on a mail (reply, delete, flag), explain that this plugin only reads and let them do it in Outlook.

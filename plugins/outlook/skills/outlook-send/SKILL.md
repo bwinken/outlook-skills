@@ -24,7 +24,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_send.py" show <id> | list | discar
 
 ## Workflow
 
-1. **Context.** Run `settings.py show` once (first run: hand over to `outlook-setup`). If `profile` is set, run `settings.py profile show`: it holds the user's greetings, closings, signature, typical length and language. For names, `memory.py find "<name>"` gives the address. For a reply, read the mail first: `outlook_search.py -IncludeBody -Max 1` with precise filters, or `outlook_thread.py -EntryID`, and keep the `EntryID`.
+1. **Context.** Run `settings.py show` and `settings.py profile show` once per conversation, in one step (parallel tool calls): the second prints a one-line note when there is no profile yet, otherwise the user's greetings, closings, signature, typical length and language. First run: offer `outlook-setup` afterwards. For a name, open the memory note whose title or tag matches it (`memory.py show "<title>"`, from the index in the `settings.py show` output) to get the address. For a reply, read the mail first: `outlook_search.py -IncludeBody -Max 1` with precise filters, or `outlook_thread.py -EntryID`, and keep the `EntryID`.
 2. **Write the body** per reference.md §1: the way the user writes mail, short, the point first, one line per point, greeting and closing from the profile, the user's language. No essays, no bullet walls, no restating the original mail. Write it to a UTF-8 file.
 3. **Draft.** Run `draft` with `-BodyFile`. New mail: `-To` and `-Subject` are required. Reply: `-ReplyTo <EntryID>`, `-ReplyAll` only when the user asked to answer everyone or the original clearly went to a group. Attachments: `-Attach` with the paths the user named in this conversation. To forward a file from another mail, first copy it out with `outlook_attachments.py -EntryID <that mail's EntryID> -SaveTo <tmp folder>` (that needs the user's ok too) and attach the saved path. Keep the JSON it prints.
 4. **Show and ask.** Present the draft exactly as reference.md §2: To and Cc with full addresses, Subject, the body verbatim, the footer line, the attachments with their full paths and sizes, and for a reply one line noting the quoted original is attached below. Then one AskUserQuestion (wording in reference.md §3) whose text lists every To and Cc address, with options 「寄出」(Recommended only if the user already said to send) / 「修改內容」/ 「改收件者」/ 「取消」. Any change means a new `draft` (discard the old id) and asking again. Proceed only on 「寄出」.
@@ -46,8 +46,8 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_send.py" show <id> | list | discar
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-send/reference.md` for the writing rules, the draft card, the question wording and the result lines.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-send/reference.md` holds the writing rules, the draft card, the question wording and the result lines. Read it once per conversation, in the same step as `settings.py show`.
 
 ## Read-only rules
 
-Everything else follows the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. This skill's only write is the Send inside `outlook_send.py send`, after the user's click. No Save, no Drafts folder, no flags, no marking read.
+Everything else is read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it). This skill's only write is the Send inside `outlook_send.py send`, after the user's click. No Save, no Drafts folder, no flags, no marking read.

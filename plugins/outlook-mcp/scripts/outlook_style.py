@@ -7,6 +7,9 @@
 Reports: reply rate overall and per sender (who gets answered, who never does), reply latency,
 typical length, language mix, common greetings and closings, the signature block, sending hours.
 No bodies are returned, only aggregates and short recurring lines.
+
+Both folders are read through Outlook's Table object (no item opened); reply rates and latency come
+from those rows alone. Only the newest -BodySamples sent mails are opened, for the text statistics.
 """
 import datetime as dt
 import re
@@ -35,22 +38,17 @@ def _cjk_ratio(text: str) -> float:
     return round(sum(1 for c in letters if "一" <= c <= "鿿" or "㐀" <= c <= "䶿") / len(letters), 2)
 
 
-def _conv_key(m):
-    return str(oc._safe(lambda: m.ConversationID, "") or "") or ("T:" + str(oc._safe(lambda: m.ConversationTopic, "") or ""))
+def _conv_key(row):
+    s = row.summary
+    return s["ConversationID"] or ("T:" + s["ConversationTopic"])
 
 
-def _scan(folder, since, cap, recurse=True):
+def _scan(folder, since, cap, recurse=True, extra=()):
     out = []
-    folders = oc.mail_folders_recursive(folder) if recurse else [folder]
-    for f in folders:
-        items = f.Items
-        items.Sort("[ReceivedTime]", True)
-        for m in oc.iter_mail(items):
-            if len(out) >= cap:
-                return out
-            if oc.to_datetime(m.ReceivedTime) < since:
-                break
-            out.append(m)
+    for f in (oc.mail_folders_recursive(folder) if recurse else [folder]):
+        if len(out) >= cap:
+            break
+        out.extend(oc.scan_mail(f, after=since, limit=cap - len(out), extra=extra))
     return out
 
 
@@ -61,32 +59,30 @@ def run(a, ns=None):
     st = oc.find_store(a.store, ns) if a.store else None
     inbox = st.GetDefaultFolder(oc.OL_FOLDER["Inbox"]) if st else ns.GetDefaultFolder(oc.OL_FOLDER["Inbox"])
     sent_f = st.GetDefaultFolder(oc.OL_FOLDER["SentMail"]) if st else ns.GetDefaultFolder(oc.OL_FOLDER["SentMail"])
-    received = _scan(inbox, since, a.maxitems)
+    received = _scan(inbox, since, a.maxitems, extra=("ToMe", "Unsubscribe"))
     sent = _scan(sent_f, since, a.maxitems, recurse=False)
 
     conv = {}
-    for m in received + sent:
-        conv.setdefault(_conv_key(m), []).append((oc.to_datetime(m.ReceivedTime), oc.sender_smtp(m).lower(), m))
+    for row in received + sent:
+        if row.received is not None:
+            conv.setdefault(_conv_key(row), []).append((row.received, oc.sender_address(row, ns), row))
 
     # ---- reply rate per sender
     per = {}
     newsletters = set()
-    for m in received:
-        frm = oc.sender_smtp(m).lower()
-        if not frm or frm in me:
+    for row in received:
+        frm = oc.sender_address(row, ns)
+        t = row.received
+        if not frm or frm in me or t is None:
             continue
-        t = oc.to_datetime(m.ReceivedTime)
-        e = per.setdefault(frm, {"Address": frm, "Name": str(m.SenderName), "Received": 0, "Replied": 0, "ToMe": 0})
+        e = per.setdefault(frm, {"Address": frm, "Name": row.summary["From"], "Received": 0, "Replied": 0, "ToMe": 0})
         e["Received"] += 1
-        if any(r["Address"].lower() in me for r in oc.recipient_list(m, 1)):
+        if oc.to_me(row, me, ns):
             e["ToMe"] += 1
-        if any(x[0] > t and x[1] in me for x in conv.get(_conv_key(m), [])):
+        if any(x[0] > t and x[1] in me for x in conv.get(_conv_key(row), [])):
             e["Replied"] += 1
-        try:
-            if m.PropertyAccessor.GetProperty(oc.PR_LIST_UNSUBSCRIBE):
-                newsletters.add(frm)
-        except Exception:
-            pass
+        if row.extra.get("Unsubscribe"):
+            newsletters.add(frm)
     for e in per.values():
         e["Rate"] = round(e["Replied"] / e["Received"], 2) if e["Received"] else 0.0
         e["Newsletter"] = e["Address"] in newsletters
@@ -94,21 +90,28 @@ def run(a, ns=None):
     human = [e for e in senders if not e["Newsletter"]]
     tot_r = sum(e["Received"] for e in human); tot_a = sum(e["Replied"] for e in human)
 
-    # ---- latency, length, language, greetings, closings, signature, hours
-    latencies, lengths, cjk, hours = [], [], [], Counter()
-    greetings, closings, sig_blocks = Counter(), Counter(), Counter()
-    for m in sent:
-        t = oc.to_datetime(m.ReceivedTime)
-        earlier = [x for x in conv.get(_conv_key(m), []) if x[0] < t and x[1] and x[1] not in me]
+    # ---- latency and sending hours: from the rows, every sent mail
+    latencies, hours = [], Counter()
+    for row in sent:
+        t = row.received
+        if t is None:
+            continue
+        earlier = [x for x in conv.get(_conv_key(row), []) if x[0] < t and x[1] and x[1] not in me]
         if earlier:
             latencies.append((t - max(x[0] for x in earlier)).total_seconds() / 3600)
-        own = _own_text(oc._safe(lambda: str(m.Body), "") or "")
+        hours[t.hour] += 1
+
+    # ---- length, language, greetings, closings, signature: from the bodies of the newest sent mails
+    lengths, cjk = [], []
+    greetings, closings, sig_blocks = Counter(), Counter(), Counter()
+    sampled = sent[:max(0, a.bodysamples)]
+    for row in sampled:
+        own = _own_text(oc.enrich(row, body=True, ns=ns).pop("Body", ""))
         ls = _lines(own)
         if not ls:
             continue
         lengths.append(len(own))
         cjk.append(_cjk_ratio(own))
-        hours[t.hour] += 1
         greetings[ls[0][:40]] += 1
         # signature: trailing block starting at a signature hint, up to 6 lines
         sig_start = None
@@ -130,7 +133,7 @@ def run(a, ns=None):
     hour_hist = {f"{h:02d}": c for h, c in sorted(hours.items())}
     busy_hours = [h for h, _ in hours.most_common(4)]
     return {
-        "Window": {"Since": since.strftime("%Y-%m-%dT%H:%M:%S"), "Days": a.days, "SentAnalysed": len(sent), "ReceivedAnalysed": len(received)},
+        "Window": {"Since": since.strftime("%Y-%m-%dT%H:%M:%S"), "Days": a.days, "SentAnalysed": len(sent), "ReceivedAnalysed": len(received), "BodySamples": len(sampled)},
         "Me": sorted(me),
         "ReplyRate": {
             "OverallHuman": round(tot_a / tot_r, 2) if tot_r else None,
@@ -158,6 +161,7 @@ def parser():
     ap = oc.ArgParser(description=__doc__)
     ap.opt("-Days", type=int, default=180)
     ap.opt("-MaxItems", type=int, default=3000)
+    ap.opt("-BodySamples", type=int, default=300, help="newest sent mails whose text is read for length, language, greetings, closings and signature")
     ap.opt("-Top", type=int, default=20)
     ap.opt("-Store", default="")
     oc.add_common_output(ap)
@@ -166,6 +170,7 @@ def parser():
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 

@@ -23,7 +23,7 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_meeting.py" show <id> | discard <i
 
 ## Workflow
 
-1. **Context.** Run `settings.py show` once (first run: hand over to `outlook-setup`). Names: `memory.py find "<name>"` for addresses. Working hours from settings are the default window for "sometime Thursday".
+1. **Context.** Run `settings.py show` once per conversation, in the same step as the first script (parallel tool calls; the scripts take `store` from the settings themselves). First run: offer `outlook-setup` afterwards. Names: open the memory note whose title or tag matches (`memory.py show "<title>"`, from the index in that output) for the address. Working hours from settings are the default window for "sometime Thursday".
 2. **Pick the slot.** If the user gave a time, take it. If they gave a day or "next week", find free slots the way `outlook-availability` does (`outlook_calendar.py` over the range, gaps within working hours) and propose at most three, or ask. Default length: settings `meeting.default_duration_minutes` (60). Always the user's local time.
 3. **Draft.** Write the agenda per reference.md §1 (short, plain, optional) to a UTF-8 file when there is one. Run `draft`. Keep the JSON.
 4. **Show and ask.** Present per reference.md §2: subject, date and time with duration, location, required and optional attendees with full addresses, agenda, footer, and every entry of `conflicts` in a visible line (「⚠ 撞期」). One AskUserQuestion (reference.md §3) that repeats the time and lists every attendee, options 「送出邀請」(or 「建立行程」) / 「改時間」/ 「改與會者」/ 「改內容」/ 「取消」. Any change means a new `draft` (discard the old id) and asking again. With conflicts, recommend 「改時間」 unless the user already said to go ahead.
@@ -44,8 +44,8 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_meeting.py" show <id> | discard <i
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-schedule/reference.md` for the agenda rules, the draft card, the question wording, the result lines and the draft JSON fields.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-schedule/reference.md` holds the agenda rules, the draft card, the question wording, the result lines and the draft JSON fields. Read it once per conversation, in the same step as `settings.py show`.
 
 ## Read-only rules
 
-Everything else follows the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. This skill's only write is the Send or Save inside `outlook_meeting.py send`, after the user's click. No accepting, declining, moving or deleting existing items.
+Everything else is read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it). This skill's only write is the Send or Save inside `outlook_meeting.py send`, after the user's click. No accepting, declining, moving or deleting existing items.

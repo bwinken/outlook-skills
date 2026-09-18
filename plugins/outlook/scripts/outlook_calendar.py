@@ -4,6 +4,9 @@
     python outlook_calendar.py                      # today
     python outlook_calendar.py -Days 7
     python outlook_calendar.py -Start 2026-09-15 -End 2026-09-20 -OutFile cal.json
+
+Recurrence expansion needs the Items collection (a Table shows only the series master), so each
+appointment in the range is read item by item; its Body only with -PreviewLength.
 """
 import datetime as dt
 
@@ -27,7 +30,7 @@ def run(a, ns=None):
     for it in oc.iter_items(items):
         if int(oc._safe(lambda: it.Class, 0)) != oc.OL_APPOINTMENT:
             continue
-        s = oc.appointment_summary(it)
+        s = oc.appointment_summary(it, a.previewlength)
         if a.includefree or s["BusyStatus"] != "Free":
             appts.append(s)
     appts.sort(key=lambda x: x["Start"] or "")
@@ -57,12 +60,14 @@ def parser():
     ap.opt("-Days", type=int, default=1, help="range length from -Start when -End is not given")
     ap.opt("-Store", default="")
     ap.flag("-IncludeFree", help="include items whose BusyStatus is Free")
+    ap.opt("-PreviewLength", type=int, default=0, help="characters of BodyPreview per item (meeting notes, links); 0 = the body is not read")
     oc.add_common_output(ap)
     return ap
 
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 

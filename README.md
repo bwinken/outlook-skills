@@ -43,6 +43,8 @@ Troubleshooting: [docs/install-troubleshooting.md](docs/install-troubleshooting.
 | `outlook-send` | 回他說好、幫我回這封、把桌面上的報價單寄給 Alice | **會寄信**：對話確認＋桌面視窗按「寄出」 |
 | `outlook-schedule` | 幫我約 Cassie 週四下午開會、發個邀請、把週五早上擋起來 | **會建立會議、送邀請**：對話確認＋桌面視窗按「送出」 |
 
+讀信箱走 Outlook 的 Table 物件，一次拿回幾百封的摘要，只有要看內文或附件的那幾封才會真的打開；Outlook 沒開時腳本會在背景啟動它，第一次會多等幾秒。
+
 唯讀的 skill 不刪信、不搬信、不標已讀。會寫的兩個，寄出的內容和你在草稿看到的完全一樣，頁尾註明 Drafted by Claude, approved by 你；搜尋的「把附件存出來」只寫到你指定的資料夾。
 
 ## 設定與記憶
@@ -63,7 +65,7 @@ Troubleshooting: [docs/install-troubleshooting.md](docs/install-troubleshooting.
 | `store` | null | 預設信箱；郵件在 PST 時填它的名稱 |
 | `working_hours.start` / `.end` / `.days` | 09:00 / 18:00 / 1-5 | 找空檔的範圍 |
 | `availability.min_slot_minutes` | 30 | 短於此的空檔不列 |
-| `search.default_lookback_days` / `.default_folder` / `.all_folders` | 90 / Inbox / false | 沒說日期、資料夾時的搜尋範圍 |
+| `search.default_lookback_days` / `.default_folder` / `.all_folders` | 90 / Inbox / false | 沒說日期、資料夾時的搜尋範圍；`store`、`default_folder`、`all_folders` 腳本會自己套用 |
 | `search.direct_read_max` | 20 | 結果不超過此數就直接讀，不用 reranker |
 | `rerank.gateway` / `.model` / `.api_key` / `.auto_consent` | null / bge-reranker-v2-m3 / null / false | 模糊搜尋用的 reranker；`auto_consent` 為 true 就不每次問 |
 | `send.approver` / `.footer` / `.quote_original` / `.dialog_timeout_seconds` | Outlook 使用者名稱 / Drafted by Claude… / true / 300 | 寄信與會議頁尾的核准者與文字、回信是否引用原信、確認視窗等多久 |

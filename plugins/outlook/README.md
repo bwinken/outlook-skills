@@ -41,6 +41,10 @@ python scripts/memory.py find alice
 | `read_msg.py`, `msgfile.py` | outlook-open-msg (no Outlook needed, any OS) |
 | `settings.py`, `memory.py` | every skill, outlook-memory |
 
+## Speed
+
+Python and Outlook are separate processes, so every property read is a cross-process call. Folder scans therefore go through Outlook's Table object (`outlook_com.scan_mail`): one call returns hundreds of mails with every summary field except the body and the attachment list, and a mail is opened only when a script needs one of those (`-PreviewLength`, `-IncludeBody`, attachments, the top rows of a follow-up list). Stores without Table support fall back to the Items collection. Outlook is dispatched early-bound (makepy cache, built once per machine) with a late-bound fallback. `-Body`, `-Text` and `-AnyOf` search inside bodies, which Outlook cannot index; keep a date range on them.
+
 ## Other hosts
 
 - **Zoo Code / Agent Skills hosts**: `python install.py` copies the skill files into `~/.roo/skills/` (`--agents` for `~/.agents/skills/`, `--project` for the current directory) and points them at this folder. `--uninstall` removes them.

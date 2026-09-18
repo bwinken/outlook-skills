@@ -73,8 +73,8 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" profile write --file <edited.
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` for the front-matter schema, per-category guidance, title rules, the list layout, the settings key table, and how to present the profile.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-memory/reference.md` holds the front-matter schema, per-category guidance, title rules, the list layout, the settings key table, and how to present the profile. Read it once per conversation, in the same step as the first command.
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Outlook is only read; the only writes are inside `.outlook-skills/` folders, and only after the user agreed.
+Read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it): Outlook is only read; the only writes are inside `.outlook-skills/` folders, and only after the user agreed.

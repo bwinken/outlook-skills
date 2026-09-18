@@ -66,7 +66,7 @@ After the dialogs: `已寫入 {N} 條到 ~/.outlook-skills/memory/（people {a}�
 
 | Field | Meaning |
 |---|---|
-| `Window` | `Since`, `Days`, `SentAnalysed`, `ReceivedAnalysed` (mails scanned) |
+| `Window` | `Since`, `Days`, `SentAnalysed`, `ReceivedAnalysed` (mails scanned), `BodySamples` (newest sent mails whose text was read for length, language, greetings, closings and signature; `-BodySamples`, default 300) |
 | `Me` | the user's addresses (accounts + current user) |
 | `ReplyRate.OverallHuman` | replied ÷ received, newsletters excluded (0 to 1) |
 | `ReplyRate.BySender[]` | `Name`, `Address`, `Received`, `Replied`, `ToMe` (times the user was in To), `Rate`, `Newsletter` |

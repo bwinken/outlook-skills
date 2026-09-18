@@ -149,7 +149,7 @@ def _search_parser():
 TOOLS = [
     {"name": "search_mail", "parser": _search_parser, "run": run_search, "writes": False,
      "description": "Search mail by sender, recipient, subject, body text, date range, unread state or attachments. Newest first, "
-                    "previews only unless includebody. Returns EntryID, folder, from, subject, dates and attachment names. "
+                    "no body text unless previewlength (a preview) or includebody (the whole body). Returns EntryID, folder, from, subject, dates and attachment names. "
                     "With query and a configured reranker gateway the results are reranked by relevance (Score field)."},
     {"name": "get_thread", "parser": outlook_thread.parser, "run": lambda a, _: outlook_thread.run(a), "writes": False,
      "description": "Every message of one conversation, oldest first, with full bodies and recipients. Select by entryid (from search_mail), "

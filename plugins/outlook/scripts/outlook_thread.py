@@ -3,6 +3,9 @@
 
     python outlook_thread.py -Subject "Q3 budget"
     python outlook_thread.py -EntryID 00000000ABCD... -OutFile thread.json
+
+The anchor and the topic fallback are found through Outlook's Table object; the messages of the
+thread are opened one by one (their bodies are the point of this script).
 """
 import outlook_com as oc
 
@@ -13,18 +16,16 @@ def find_anchor(a, ns):
     if not (a.subject or a.conversationid):
         raise SystemExit("Provide -EntryID, -ConversationID or -Subject.")
     folder = oc.get_folder(a.folder, a.store, ns)
-    items = folder.Items
-    if a.subject:
-        items = items.Restrict(f'@SQL="urn:schemas:httpmail:subject" LIKE \'%{oc.dasl_literal(a.subject)}%\'')
-    items.Sort("[ReceivedTime]", True)
-    for it in oc.iter_mail(items):
-        if not a.conversationid or str(oc._safe(lambda: it.ConversationID, "")) == a.conversationid:
-            return it
+    dasl = f'@SQL="urn:schemas:httpmail:subject" LIKE \'%{oc.dasl_literal(a.subject)}%\'' if a.subject else ""
+    for row in oc.scan_mail(folder, dasl):
+        if not a.conversationid or row.summary["ConversationID"] == a.conversationid:
+            return oc.open_item(row, ns)
     raise SystemExit("No matching message found.")
 
 
 def collect(anchor, ns):
-    messages, method = [], ""
+    """The thread's mail items, how they were found, and the folder path of each item where known."""
+    messages, method, paths = [], "", {}
     try:
         conv = anchor.GetConversation()
         if conv is not None:
@@ -33,8 +34,11 @@ def collect(anchor, ns):
             while not table.EndOfTable:
                 row = table.GetNextRow()
                 try:
+                    cls = str(oc._safe(lambda: row.Item("MessageClass"), "") or "")
+                    if cls and not cls.upper().startswith("IPM.NOTE"):
+                        continue  # a meeting request or report in the thread: not opened
                     m = ns.GetItemFromID(str(row.Item("EntryID")))
-                    if int(m.Class) == oc.OL_MAIL_ITEM:
+                    if cls or int(m.Class) == oc.OL_MAIL_ITEM:
                         messages.append(m)
                 except Exception:
                     pass
@@ -44,27 +48,29 @@ def collect(anchor, ns):
         method = "ConversationTopic"
         topic = str(anchor.ConversationTopic)
         root = anchor.Parent.Store.GetRootFolder()
+        dasl = f'@SQL="urn:schemas:httpmail:thread-topic" = \'{oc.dasl_literal(topic)}\''
         for f in oc.mail_folders_recursive(root):
-            r = f.Items.Restrict(f'@SQL="urn:schemas:httpmail:thread-topic" = \'{oc.dasl_literal(topic)}\'')
-            messages.extend(oc.iter_mail(r))
-    return messages, method
+            for row in oc.scan_mail(f, dasl):
+                paths[row.summary["EntryID"]] = row.summary["Folder"]
+                messages.append(oc.open_item(row, ns))
+    return messages, method, paths
 
 
 def run(a, ns=None):
     ns = ns or oc.connect()
     anchor = find_anchor(a, ns)
-    messages, method = collect(anchor, ns)
+    messages, method, paths = collect(anchor, ns)
     seen, summaries = set(), []
     for m in messages:
         eid = str(m.EntryID)
         if eid in seen:
             continue
         seen.add(eid)
-        s = oc.mail_summary(m, include_body=True)
+        s = oc.mail_summary(m, include_body=True, folder_path=paths.get(eid))
         if len(s["Body"]) > a.maxbodychars:
             s["Body"] = s["Body"][:a.maxbodychars] + "\n[... truncated ...]"
-        s["ToRecipients"] = oc.recipient_list(m, 1)
-        s["CcRecipients"] = oc.recipient_list(m, 2)
+        recipients = oc.recipients_by_type(m)  # one pass over the Recipients collection
+        s["ToRecipients"], s["CcRecipients"] = recipients[1], recipients[2]
         summaries.append(s)
     summaries.sort(key=lambda x: x["ReceivedTime"] or "")
     return {
@@ -90,6 +96,7 @@ def parser():
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 

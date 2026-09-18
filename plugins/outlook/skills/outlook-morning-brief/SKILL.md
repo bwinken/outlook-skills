@@ -5,7 +5,7 @@ description: Morning brief from the local Outlook (Classic) mailbox, READ-ONLY -
 
 # outlook-morning-brief
 
-Read-only. Composes three scripts into one briefing (three runs for the full brief); nothing is marked read or changed.
+Read-only. Composes three scripts into one briefing (three runs for the full brief, independent of each other: launch them in one step as parallel tool calls); nothing is marked read or changed.
 
 ## Where this runs
 
@@ -45,12 +45,12 @@ A mail counts as answered when a later mail in the same conversation comes from 
 
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant). `first_run: true` means `~/.outlook-skills` does not exist yet: hand over to `outlook-setup` first (respect a "not now"). Apply `store` (pass it as `-Store`), `working_hours`, `language`. When a sender, attendee or project is named in memory, use the note's role and keywords. Never write memory silently. If `profile` is set, read it (`settings.py profile show`) before drafting a reply in the user's voice or judging which mails need a reply.
+Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once per conversation, in the same step as the scripts above (all of them as parallel tool calls; the scripts take `store` from the settings themselves). `settings.py profile show` can join that step: it prints a one-line note when there is no profile yet, otherwise the reply habits to use before drafting a reply in the user's voice or judging which mails need a reply. `first_run: true` means `~/.outlook-skills` does not exist yet: give the brief, then offer `outlook-setup` once (respect a "not now"). Apply `working_hours`, `language`. When a sender, attendee or project matches a title or tag in the `memory` index, open that note with `memory.py show "<title>"` and use its role and keywords. Never write memory silently.
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-morning-brief/reference.md` for the ranking rules and the brief template.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-morning-brief/reference.md` holds the ranking rules and the brief template. Read it once per conversation, in the same step as the scripts (parallel tool calls), not as a separate turn.
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never mark read, flag, accept, decline, move or delete. Replies go through `outlook-send`, never from here.
+Read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it): Never mark read, flag, accept, decline, move or delete. Replies go through `outlook-send`, never from here.
