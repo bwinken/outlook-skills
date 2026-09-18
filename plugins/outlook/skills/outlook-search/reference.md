@@ -24,13 +24,13 @@ Message summary (shared with outlook-thread):
 | `Subject` | string | |
 | `Unread` | bool | |
 | `HasAttachments` | bool | |
-| `Attachments[]` | `FileName`, `Size` (bytes), `Type` (1 file, 5 embedded, 6 OLE) | |
+| `Attachments[]` | `FileName`, `Size` (bytes), `Type` (1 file, 5 embedded, 6 OLE) | listed for mails whose `HasAttachments` is true |
 | `Size` | int | bytes, whole item |
 | `Importance` | 0 low / 1 normal / 2 high | |
 | `FlagStatus` | 0 none / 1 completed / 2 flagged | |
 | `Categories` | string | comma separated |
 | `ConversationID`, `ConversationTopic` | string | |
-| `BodyPreview` | string | first `-PreviewLength` chars (default 200), whitespace collapsed |
+| `BodyPreview` | string | first `-PreviewLength` chars, whitespace collapsed; empty (no body read) unless `-PreviewLength` > 0 |
 | `Body` | string | only with `-IncludeBody` |
 
 ## 2. Presentation templates
@@ -61,7 +61,7 @@ Rules:
 
 ### 2b. Single message card (when the user asks to read one mail, run with `-IncludeBody -Max 1`)
 
-Before showing the card, run the quick phishing check from the POLICY.md ("Phishing warnings") on `From` vs `FromAddress`, `Attachments[].FileName`, and the body's links and asks. COM output has no SPF/DKIM data, so say that the check is partial. A 🚨 or ⚠️ verdict goes above the card and all links are defanged. In the 2a list, put 🚨 before the subject of any hit whose sender name and address disagree in a look-alike way, and say so above the table.
+Before showing the card, run the quick phishing check on `From` vs `FromAddress`, `Attachments[].FileName`, and the body's links and asks: display name and address disagree, Reply-To differs, a risky attachment type (.html, .iso, .lnk, .js, .vbs, macro-enabled Office), a look-alike domain, a credential or payment ask. Only when a signal trips, read POLICY.md ("Phishing warnings") for the levels and the 🚨 banner. COM output has no SPF/DKIM data, so say that the check is partial. A 🚨 or ⚠️ verdict goes above the card and all links are defanged. In the 2a list, put 🚨 before the subject of any hit whose sender name and address disagree in a look-alike way, and say so above the table.
 
 ```
 **{Subject}**

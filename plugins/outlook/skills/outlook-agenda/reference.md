@@ -27,7 +27,7 @@ Appointment:
 | `ResponseStatus` | None / Organized / Tentative / Accepted / Declined / NotResponded |
 | `IsRecurring` | bool; the item is already the expanded occurrence |
 | `Categories` | string |
-| `BodyPreview` | first 300 chars |
+| `BodyPreview` | first `-PreviewLength` chars; empty by default (pass `-PreviewLength 300` for meeting notes or links; the body is the expensive property) |
 
 Items with `BusyStatus = Free` are excluded unless `-IncludeFree` was passed.
 

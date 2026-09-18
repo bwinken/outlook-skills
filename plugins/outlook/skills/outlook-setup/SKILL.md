@@ -23,14 +23,14 @@ python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show | init | set <key> <valu
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_status.py"                                  # stores, sizes, folder counts (stage 2 options)
 python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_overview.py" -Days 180 [-Store X] -OutFile "<tmp>/overview.json"
 python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find | new | append
-python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_style.py" -Days 180 [-Store X] -OutFile "<tmp>/style.json"
+python "${CLAUDE_PLUGIN_ROOT}/scripts/outlook_style.py" -Days 180 [-Store X] [-BodySamples 300] -OutFile "<tmp>/style.json"
 python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" profile write --file "<tmp>/profile.md"
 python "${CLAUDE_PLUGIN_ROOT}/scripts/rerank.py" --show-config
 ```
 
 ## Stage 1: confirm
 
-Run `outlook_status.py` first (fast, read-only) to learn the stores and their sizes. Then ask **one** question with AskUserQuestion, wording per reference.md §1: what the three remaining stages do, that the scan reads the last 180 days of subjects, senders, folders and meetings but no bodies, that nothing is written without a yes, and the expected duration (about a minute per 3,000 mails; say "a few minutes" for a large PST). Options: 「開始設定」(Recommended) / 「只設定，不掃描信箱」/ 「這次先不要」. Not now: create nothing, return.
+Run `outlook_status.py` first (fast, read-only) to learn the stores and their sizes; `settings.py show` and `rerank.py --show-config` can run in the same step. Then ask **one** question with AskUserQuestion, wording per reference.md §1: what the three remaining stages do, that the scan reads the last 180 days of subjects, senders, folders and meetings but no bodies, that nothing is written without a yes, and the expected duration (the scan reads folders in bulk, so a mailbox of a few thousand mails takes well under a minute; say "a few minutes" for a large PST). Options: 「開始設定」(Recommended) / 「只設定，不掃描信箱」/ 「這次先不要」. Not now: create nothing, return.
 
 ## Stage 2: settings, one item at a time
 
@@ -50,8 +50,8 @@ When the host offers subagents and the overview JSON is large (more than about 3
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-setup/reference.md` for the exact wording of each question, the settings items and their options, the candidate table, and the profile.md template.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-setup/reference.md` holds the exact wording of each question, the settings items and their options, the candidate table, and the profile.md template. Read it once, in the same step as `outlook_status.py`.
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Outlook is only read. Nothing under `~/.outlook-skills/` is written without a yes in a question dialog. Remind the user once to add `.outlook-skills/` to `.gitignore` when the working directory is a git repo.
+Read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it): Outlook is only read. Nothing under `~/.outlook-skills/` is written without a yes in a question dialog. Remind the user once to add `.outlook-skills/` to `.gitignore` when the working directory is a git repo.

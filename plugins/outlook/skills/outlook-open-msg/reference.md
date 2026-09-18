@@ -44,7 +44,7 @@ Several files: one card per file separated by `---`, in the order given, then a 
 
 ### 2b. Header analysis (phishing / delivery questions, run with `--headers`)
 
-Always run the quick check from the POLICY.md ("Phishing warnings") on every file, even when the user only asked "what is this". If the verdict is 🚨 or ⚠️, the warning goes **above** the message card.
+Always run the quick check (display name vs address, Reply-To, risky attachment types, look-alike domains, credential or payment asks) on every file, even when the user only asked "what is this"; read POLICY.md ("Phishing warnings") for the levels and the banner when it trips. If the verdict is 🚨 or ⚠️, the warning goes **above** the message card.
 
 🚨 high-risk reply layout:
 

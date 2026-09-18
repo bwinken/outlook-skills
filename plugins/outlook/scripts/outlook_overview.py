@@ -4,6 +4,9 @@ likely newsletters, recurring meetings. No message bodies.
 
     python outlook_overview.py -Days 180 -OutFile overview.json
     python outlook_overview.py -Store 20230731
+
+Mail is read through Outlook's Table object (no item opened). Recipients are counted from the To
+line of each sent mail; one sample mail per top recipient is opened to resolve the address.
 """
 import datetime as dt
 
@@ -24,6 +27,10 @@ def _store_default(ns, store_obj, root, fid, names):
     return ns.GetDefaultFolder(fid)
 
 
+def _split_names(display_to: str):
+    return [n.strip() for n in (display_to or "").split(";") if n.strip()]
+
+
 def run(a, ns=None):
     ns = ns or oc.connect()
     since = dt.datetime.combine(dt.date.today(), dt.time()) - dt.timedelta(days=a.days)
@@ -35,11 +42,8 @@ def run(a, ns=None):
     for f in oc.mail_folders_recursive(root):
         newest = None
         try:
-            it = f.Items
-            it.Sort("[ReceivedTime]", True)
-            first = it.GetFirst()
-            if first is not None:
-                newest = oc.iso(first.ReceivedTime)
+            for row in oc.scan_mail(f, limit=1):
+                newest = row.summary["ReceivedTime"]
         except Exception:
             pass
         folders.append({"Path": str(f.FolderPath), "Items": int(f.Items.Count), "Unread": oc._safe(lambda: int(f.UnReadItemCount)), "Newest": newest})
@@ -47,48 +51,47 @@ def run(a, ns=None):
     senders, topics, scanned_in = {}, {}, 0
     inbox = _store_default(ns, store_obj, root, oc.OL_FOLDER["Inbox"], ("Inbox", "收件匣", "收件箱"))
     for f in (oc.mail_folders_recursive(inbox) if inbox is not None else []):
-        items = f.Items
-        items.Sort("[ReceivedTime]", True)
-        for m in oc.iter_mail(items):
-            if scanned_in >= a.maxitems:
-                break
-            rt = oc.to_datetime(m.ReceivedTime)
-            if rt < since:
-                break
+        if scanned_in >= a.maxitems:
+            break
+        path = str(f.FolderPath)
+        for row in oc.scan_mail(f, after=since, limit=a.maxitems - scanned_in, extra=("Unsubscribe",), folder_path=path):
             scanned_in += 1
-            addr = oc.sender_smtp(m).lower()
+            s = row.summary
+            rt = s["ReceivedTime"]
+            addr = oc.sender_address(row, ns)
             if addr:
-                e = senders.setdefault(addr, {"Key": addr, "Count": 0, "Name": str(m.SenderName), "Last": oc.iso(rt), "Unsub": False, "Folder": str(f.FolderPath)})
+                e = senders.setdefault(addr, {"Key": addr, "Count": 0, "Name": s["From"], "Last": rt, "Unsub": False, "Folder": path})
                 e["Count"] += 1
-                if oc.iso(rt) > e["Last"]:
-                    e["Last"] = oc.iso(rt)
-                try:
-                    if m.PropertyAccessor.GetProperty(oc.PR_LIST_UNSUBSCRIBE):
-                        e["Unsub"] = True
-                except Exception:
-                    pass
-            topic = str(oc._safe(lambda: m.ConversationTopic, "") or "")
+                if rt and (e["Last"] is None or rt > e["Last"]):
+                    e["Last"] = rt
+                if row.extra.get("Unsubscribe"):
+                    e["Unsub"] = True
+            topic = s["ConversationTopic"]
             if topic:
-                t = topics.setdefault(topic, {"Key": topic, "Count": 0, "Last": oc.iso(rt), "Sample": addr})
+                t = topics.setdefault(topic, {"Key": topic, "Count": 0, "Last": rt, "Sample": addr})
                 t["Count"] += 1
 
-    recips, scanned_out = {}, 0
+    recips, samples, scanned_out = {}, {}, 0
     sent = _store_default(ns, store_obj, root, oc.OL_FOLDER["SentMail"], ("Sent Items", "寄件備份", "已发送邮件"))
     if sent is not None:
-        items = sent.Items
-        items.Sort("[SentOn]", True)
-        for m in oc.iter_mail(items):
-            if scanned_out >= a.maxitems:
-                break
-            st = oc.to_datetime(oc._safe(lambda: m.SentOn))
-            if st and st < since:
-                break
+        for row in oc.scan_mail(sent, after=since, limit=a.maxitems, sort="SentOn"):
             scanned_out += 1
-            for r in oc.recipient_list(m, 1):
-                addr = r["Address"].lower()
-                if addr:
-                    e = recips.setdefault(addr, {"Key": addr, "Count": 0, "Name": r["Name"]})
-                    e["Count"] += 1
+            for name in _split_names(row.summary["To"]):
+                key = name.lower()
+                e = recips.setdefault(key, {"Key": key, "Count": 0, "Name": name})
+                e["Count"] += 1
+                samples.setdefault(key, row)  # newest sent mail naming this recipient
+        # addresses for the top recipients: one sample mail each, its To recipients read once
+        for e in sorted(recips.values(), key=lambda x: -x["Count"])[:a.top]:
+            for r in oc.recipient_list(oc.open_item(samples[e["Key"]], ns), 1):
+                if r["Address"] and (r["Name"].lower() == e["Key"] or r["Address"].lower() == e["Key"]):
+                    e["Key"] = r["Address"].lower()
+                    break
+        merged = {}
+        for e in recips.values():  # two spellings of one address count once
+            m = merged.setdefault(e["Key"], {"Key": e["Key"], "Count": 0, "Name": e["Name"]})
+            m["Count"] += e["Count"]
+        recips = merged
 
     recurring = []
     cal = _store_default(ns, store_obj, root, oc.OL_FOLDER["Calendar"], ("Calendar", "行事曆", "日历"))
@@ -132,6 +135,7 @@ def parser():
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 

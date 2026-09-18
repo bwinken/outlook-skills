@@ -37,17 +37,17 @@ Options (same script as outlook-agenda):
 
 ## Settings and memory
 
-Before the first Outlook call in a conversation, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once (no Outlook access, instant).
+Run `python "${CLAUDE_PLUGIN_ROOT}/scripts/settings.py" show` once per conversation (no Outlook access, instant), **in the same step as the first script run**, as parallel tool calls: the scripts take `store` (search also `search.default_folder` and `search.all_folders`) from the settings themselves, so nothing waits for it. A tool call that runs alone costs a whole model turn; batch the independent ones.
 
-- `first_run: true` means `~/.outlook-skills` does not exist yet: switch to `outlook-setup` (settings wizard, mailbox scan, reply-habit profile), which asks the user first. Respect a "not now" and continue here.
+- `first_run: true` means `~/.outlook-skills` does not exist yet: present this result, then offer `outlook-setup` (settings wizard, mailbox scan, reply-habit profile) once per conversation; respect a "not now".
 - Apply the merged `settings` (`working_hours.*`, `availability.min_slot_minutes`, `store`, `language`).
-- `memory` is an index (title, category, tags, updated, path), not the notes themselves. When the request names a person, folder, project or routine, run `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" find "<word>"` and `show` the matching note, so "Alice" or "供應商的信" resolve to the right address or folder. Do not load every note.
+- `memory` in that output is the complete index (title, category, tags, path). Open a note with `python "${CLAUDE_PLUGIN_ROOT}/scripts/memory.py" show "<title>"` only when a title or tag matches a person, folder, project or routine the request names, so "Alice" or "供應商的信" resolve to the right address or folder; no `find` first, never every note.
 - If the user states something worth keeping, offer to save it through `outlook-memory`; never write memory silently.
 
 ## Output format
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/outlook-availability/reference.md` before presenting results. It documents the JSON fields, the gap computation rules and the presentation template.
+`${CLAUDE_PLUGIN_ROOT}/skills/outlook-availability/reference.md` documents the JSON fields, the gap computation rules and the presentation template. Read it once per conversation, in the same step as the script run (parallel tool calls), not as a separate turn before answering.
 
 ## Read-only rules
 
-Follow the read-only policy in `${CLAUDE_PLUGIN_ROOT}/POLICY.md`. Never create, accept, decline, move or delete appointments. Suggested times are given in chat only; the user books them in Outlook.
+Read-only, per `${CLAUDE_PLUGIN_ROOT}/POLICY.md` (no need to open it): Never create, accept, decline, move or delete appointments. Suggested times are given in chat only; the user books them in Outlook.

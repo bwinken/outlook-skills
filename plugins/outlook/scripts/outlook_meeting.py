@@ -194,6 +194,7 @@ def main(argv=None):
     p = sub.add_parser("show"); p.add_argument("id"); p.set_defaults(fn=snd.run_show, out_file="")
     p = sub.add_parser("discard"); p.add_argument("id"); p.set_defaults(fn=snd.run_discard, out_file="")
     a = ap.parse_args(argv)
+    oc.apply_settings(a)  # settings.store for the conflict check when -Store was not given
     oc.write_json(a.fn(a), getattr(a, "out_file", ""))
 
 

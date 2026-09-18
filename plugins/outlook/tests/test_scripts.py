@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -192,6 +193,167 @@ class StyleTest(FakeOutlookTest):
         self.assertGreater(st["Length"]["MedianChars"], 0)
         self.assertTrue(st["Language"]["MostlyChinese"])
         json.dumps(st, ensure_ascii=False)
+
+
+class TableScanTest(FakeOutlookTest):
+    """Folder scans go through Folder.GetTable; an item is opened only for its body or its attachments."""
+
+    def opened(self):
+        ns = oc._namespace
+        real, log = ns.GetItemFromID, []
+        patch = mock.patch.object(ns, "GetItemFromID", side_effect=lambda eid: (log.append(eid), real(eid))[1])
+        return patch, log
+
+    def test_default_search_opens_no_item(self):
+        patch, log = self.opened()
+        with patch:
+            r = search("-Subject", "Q3", "-Store", "20230731", "-AllFolders")  # id3 has no attachments
+        self.assertEqual((ids(r["Results"]), log), (["id3"], []))
+        m = r["Results"][0]
+        self.assertEqual((m["FromAddress"], m["Folder"], m["BodyPreview"], m["Unread"], m["Size"]), ("david.chen@contoso.com", "\\\\20230731\\收件匣\\人才", "", False, 1024))
+        self.assertNotIn("Body", m)
+
+    def test_only_previews_and_attachments_open_items(self):
+        patch, log = self.opened()
+        with patch:
+            r = search("-Store", "20230731")
+        self.assertEqual(sorted(log), ["id1", "id6", "id7"])  # the mails with attachments, for their list
+        by = {m["EntryID"]: m for m in r["Results"]}
+        self.assertEqual([a["FileName"] for a in by["id7"]["Attachments"]], ["Q3_report.pptx", "image001.png"])
+        self.assertEqual((by["id2"]["Attachments"], by["id2"]["HasAttachments"]), ([], False))
+        log.clear()
+        with patch:
+            r = search("-Store", "20230731", "-PreviewLength", "12")
+        self.assertEqual(sorted(log), sorted(ids(r["Results"])))  # every result needed its body once
+        self.assertEqual(r["Results"][0]["BodyPreview"], "Hi, 法務回來了 hx...")
+        with patch:
+            r = search("-Store", "20230731", "-IncludeBody", "-Max", "1")
+        self.assertEqual(r["Results"][0]["Body"], "Hi, 法務回來了 hxxp")
+
+    def test_non_mail_rows_are_skipped_without_opening(self):
+        patch, log = self.opened()
+        with patch:
+            r = search("-From", "Cassie", "-Store", "20230731", "-Unread")  # mr1 is an unread meeting request from Cassie
+        self.assertEqual((ids(r["Results"]), log), (["id1"], ["id1"]))
+        with patch:
+            t = outlook_thread.run(outlook_thread.parser().parse_args(["-Subject", "合約草稿", "-Store", "20230731"]))
+        self.assertEqual(ids(t["Messages"]), ["id2", "id1"])
+        self.assertNotIn("mr1", log)
+
+    def test_second_candidate_column_when_the_store_rejects_the_first(self):
+        r = search("-Store", "20230731", "-HasAttachments")
+        self.assertEqual(sorted(ids(r["Results"])), ["id1", "id6", "id7"])
+        self.assertTrue(all(m["HasAttachments"] for m in r["Results"]))
+        self.assertIn(oc.PR_HASATTACH, oc._unsupported_columns)
+
+    def test_row_helpers(self):
+        self.assertEqual((oc._hex(b"\x00\xab"), oc._hex("ABCD"), oc._hex((0, 171)), oc._hex(None)), ("00AB", "ABCD", "00AB", ""))
+        self.assertEqual(oc._as_rows(((1, 2, 3), (4, 5, 6)), 3), [(1, 2, 3), (4, 5, 6)])
+        self.assertEqual(oc._as_rows(((1, 4), (2, 5), (3, 6)), 3), [(1, 2, 3), (4, 5, 6)])  # transposed array
+        self.assertEqual((oc._as_rows((), 3), oc._as_rows(None, 3)), ([], []))
+        self.assertEqual(oc._text(("a", "b")), "a, b")
+        self.assertIsNone(oc._row_from_values(("x", "s", None, None, "IPM.Schedule.Meeting.Request"), {"EntryID": 0, "Subject": 1, "MessageClass": 4}, "f", ()))
+
+    def test_rows_one_by_one_when_getarray_fails(self):
+        def broken(self, n):
+            raise Exception("GetArray not supported")
+        with mock.patch.object(fo.FolderTable, "GetArray", broken):
+            r = search("-Store", "20230731", "-AllFolders")
+        self.assertEqual(len(r["Results"]), 7)
+        self.assertEqual(r["Results"][0]["EntryID"], "id1")
+
+    def test_namespace_date_columns_come_in_utc_and_are_converted(self):
+        import time
+        tz = os.environ.get("TZ")
+        os.environ["TZ"] = "Asia/Taipei"
+        if hasattr(time, "tzset"):
+            time.tzset()
+
+        def restore():
+            if tz is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = tz
+            if hasattr(time, "tzset"):
+                time.tzset()
+        self.addCleanup(restore)
+        self.addCleanup(oc._unsupported_columns.clear)
+        with mock.patch.object(fo, "_REJECTED_COLUMNS", fo._REJECTED_COLUMNS | {"ReceivedTime", "SentOn"}):  # a store without the built-in date columns
+            oc._unsupported_columns.clear()
+            r = search("-Store", "20230731", "-After", "2026-09-12", "-Before", "2026-09-13")
+        self.assertEqual(ids(r["Results"]), ["id1"])
+        self.assertEqual((r["Results"][0]["ReceivedTime"], r["Results"][0]["SentOn"]), ("2026-09-12T16:42:00", "2026-09-12T16:42:00"))
+        self.assertEqual(oc._utc_to_local(dt.datetime(2026, 9, 12, 8, 42)), dt.datetime(2026, 9, 12, 16, 42) if hasattr(time, "tzset") else oc._utc_to_local(dt.datetime(2026, 9, 12, 8, 42)))
+
+    def test_to_me_sources(self):
+        ns = oc._namespace
+        rows = list(oc.scan_mail(oc.get_folder("Inbox", "20230731", ns), extra=("ToMe",)))
+        by = {row.summary["EntryID"]: row for row in rows}
+        me = {"me@contoso.com"}
+        self.assertTrue(oc.to_me(by["id6"], me))            # delivery flag column
+        by["id6"].extra["ToMe"] = None
+        self.assertFalse(oc.to_me(by["id6"], me))           # no flag, To line empty, item stays closed
+        self.assertTrue(oc.to_me(by["id6"], me, ns, open_if_needed=True))
+        self.assertIsNotNone(by["id6"].item)
+
+
+class ItemsFallbackTest(FakeOutlookTest):
+    """A store without Table support gives the same JSON through the Items collection."""
+
+    def both_ways(self, fn):
+        table = fn()
+        fo.TABLES_SUPPORTED = False
+        try:
+            items = fn()
+        finally:
+            fo.TABLES_SUPPORTED = True
+        self.assertEqual(json.dumps(items, ensure_ascii=False, sort_keys=True), json.dumps(table, ensure_ascii=False, sort_keys=True))
+        return table
+
+    def test_search(self):
+        self.both_ways(lambda: search("-Store", "20230731", "-AllFolders", "-PreviewLength", "30"))
+        self.both_ways(lambda: search("-AnyOf", "報價,quote", "-AllStores", "-AllFolders", "-After", "2026-01-01"))
+        r = self.both_ways(lambda: search("-Store", "20230731", "-Unread"))
+        self.assertEqual(ids(r["Results"]), ["id1"])
+
+    def test_followup_overview_style_thread(self):
+        with mock.patch.object(outlook_followup.dt, "datetime", _Now):
+            f = self.both_ways(lambda: outlook_followup.run(outlook_followup.parser().parse_args(["-Direction", "both", "-Store", "20230731", "-Lookback", "30"])))
+        self.assertEqual(ids(f["Sent"]["Results"]), ["s2", "s1"])
+        q = next(r for r in f["Received"]["Results"] if r["EntryID"] == "id6")
+        self.assertTrue(q["DirectToMe"] and q["LooksLikeQuestion"])
+        o = self.both_ways(lambda: outlook_overview.run(outlook_overview.parser().parse_args(["-Days", "3650", "-Store", "20230731"])))
+        self.assertEqual({r["Key"] for r in o["TopRecipients"]}, {"david.chen@contoso.com", "pc.liao@contoso.com", "cassie.tsai@contoso.com"})
+        with mock.patch.object(outlook_style.dt, "datetime", _Now):
+            st = self.both_ways(lambda: outlook_style.run(outlook_style.parser().parse_args(["-Store", "20230731", "-Days", "365"])))
+        self.assertEqual(st["Window"]["BodySamples"], 3)
+        self.both_ways(lambda: outlook_thread.run(outlook_thread.parser().parse_args(["-EntryID", "id3"])))
+
+
+class SettingsDefaultsTest(unittest.TestCase):
+    """The command line takes store / default_folder / all_folders from settings.json when not given."""
+
+    def setUp(self):
+        home = str(Path(tempfile.mkdtemp()).resolve())
+        self.env = mock.patch.dict(os.environ, {"HOME": home, "USERPROFILE": home})
+        self.env.start()
+        self.addCleanup(self.env.stop)
+        os.makedirs(os.path.join(home, ".outlook-skills"))
+        with open(os.path.join(home, ".outlook-skills", "settings.json"), "w", encoding="utf-8") as fh:
+            json.dump({"store": "20230731", "search": {"default_folder": "Inbox/人才", "all_folders": True}}, fh)
+
+    def test_applied_to_search_and_thread(self):
+        a = outlook_search.parser().parse_args([])
+        self.assertEqual(oc.apply_settings(a), ["store", "search.default_folder", "search.all_folders"])
+        self.assertEqual((a.store, a.folder, a.allfolders), ("20230731", "Inbox/人才", True))
+        a = outlook_search.parser().parse_args(["-AllStores", "-Folder", "Sent Items"])
+        self.assertEqual((oc.apply_settings(a), a.store, a.folder, a.allfolders), (["search.all_folders"], "", "Sent Items", True))
+        a = outlook_search.parser().parse_args(["-EntryID", "id7"])
+        self.assertEqual((oc.apply_settings(a), a.folder, a.allfolders), (["store"], "", False))
+        a = outlook_thread.parser().parse_args(["-Subject", "x"])
+        self.assertEqual((oc.apply_settings(a), a.store), (["store"], "20230731"))
+        a = outlook_calendar.parser().parse_args([])
+        self.assertEqual((oc.apply_settings(a), a.store, a.previewlength), (["store"], "20230731", 0))
 
 
 if __name__ == "__main__":

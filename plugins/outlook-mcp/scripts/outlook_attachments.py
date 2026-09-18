@@ -21,7 +21,7 @@ def run(a, ns=None):
     exts = {e.strip().lower().lstrip(".") for chunk in (a.ext or []) for e in chunk.split(",") if e.strip()}
     name_re = re.compile(re.escape(a.name), re.I) if a.name else None
     rows = []
-    # We need the live items again for SaveAsFile; mail_summary already gave us names/sizes.
+    # The live items are needed again for SaveAsFile; the search already gave us names and sizes.
     by_id = {}
     if a.saveto:
         for m in search["Results"]:
@@ -84,6 +84,7 @@ def parser():
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 

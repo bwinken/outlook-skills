@@ -9,6 +9,9 @@
 A mail counts as answered when a later mail in the same conversation (ConversationID, else
 ConversationTopic) comes from the other side. "sent": later mail from anyone but me.
 "received": later mail from me. LooksLikeQuestion is a cheap heuristic for the model to weigh.
+
+Inbox and Sent Items are read through Outlook's Table object (no item opened). Only the mails that
+make it into a result open their item: one Body read serves the preview and the question check.
 """
 import datetime as dt
 import re
@@ -18,8 +21,9 @@ import outlook_com as oc
 _Q = re.compile(r"[?？]|請(?:問|回|提供|確認|協助|幫)|麻煩|煩請|可否|能否|是否|\b(please|could you|can you|would you|let me know|kindly|confirm|need your)\b", re.I)
 
 
-def _conv_key(m):
-    return str(oc._safe(lambda: m.ConversationID, "") or "") or ("T:" + str(oc._safe(lambda: m.ConversationTopic, "") or ""))
+def _conv_key(row):
+    s = row.summary
+    return s["ConversationID"] or ("T:" + s["ConversationTopic"])
 
 
 def _mail_folders(ns, a, which):
@@ -36,53 +40,58 @@ def _mail_folders(ns, a, which):
     return folders
 
 
-def _scan(folders, since, max_items):
+def _scan(folders, since, max_items, extra=()):
     out = []
     for f in folders:
-        items = f.Items
-        items.Sort("[ReceivedTime]", True)
-        for m in oc.iter_mail(items):
-            if len(out) >= max_items:
-                return out
-            if oc.to_datetime(m.ReceivedTime) < since:
-                break
-            out.append(m)
+        if len(out) >= max_items:
+            break
+        out.extend(oc.scan_mail(f, after=since, limit=max_items - len(out), extra=extra))
     return out
 
 
-def _waiting_sent(sent_mails, conv, me, cutoff, now, a):
-    out = []
-    for m in sent_mails:
-        t = oc.to_datetime(m.ReceivedTime)
-        if t > cutoff:
+def _waiting_sent(sent_rows, conv, me, cutoff, now, a, ns):
+    waiting = []
+    for row in sent_rows:
+        t = row.received
+        if t is None or t > cutoff:
             continue  # too recent to chase
-        later = conv.get(_conv_key(m), [])
+        later = conv.get(_conv_key(row), [])
         if any(x[0] > t and x[1] and x[1] not in me for x in later):
             continue
-        s = oc.mail_summary(m, False, a.previewlength)
-        s["Counterparts"] = oc.recipient_list(m, 1)
+        waiting.append((t, row, later))
+    waiting.sort(key=lambda x: x[0])  # longest waiting first
+    out = []
+    for t, row, later in waiting[:a.max]:
+        s = oc.enrich(row, preview_length=a.previewlength, ns=ns)
+        s["Counterparts"] = oc.recipient_list(oc.open_item(row, ns), 1)
         s["WaitingDays"] = (now - t).days
         s["MyLaterNudges"] = sum(1 for x in later if x[0] > t and x[1] in me)
         out.append(s)
     return out
 
 
-def _waiting_received(inbox_mails, conv, me, cutoff, now, a):
-    out = []
-    for m in inbox_mails:
-        t = oc.to_datetime(m.ReceivedTime)
-        frm = oc.sender_smtp(m).lower()
-        if not frm or frm in me or t > cutoff:
+def _waiting_received(inbox_rows, conv, me, cutoff, now, a, ns):
+    waiting = []
+    for row in inbox_rows:
+        t = row.received
+        frm = oc.sender_address(row, ns)
+        if not frm or frm in me or t is None or t > cutoff:
             continue
-        later = conv.get(_conv_key(m), [])
+        later = conv.get(_conv_key(row), [])
         if any(x[0] > t and x[1] in me for x in later):
             continue
-        s = oc.mail_summary(m, False, a.previewlength)
-        body = oc._safe(lambda: str(m.Body), "") or ""
+        waiting.append((t, row, frm, later))
+    waiting.sort(key=lambda x: x[0])
+    out = []
+    for t, row, frm, later in waiting:
+        if len(out) >= a.max:
+            break
+        s = oc.enrich(row, body=True, preview_length=a.previewlength, ns=ns)  # one Body read: preview and question check
+        body = s.pop("Body", "")
         s["LooksLikeQuestion"] = bool(_Q.search(body[:2000] + " " + s["Subject"]))
         if a.questionsonly and not s["LooksLikeQuestion"]:
             continue
-        s["DirectToMe"] = any(oc.is_me(r["Address"], me) for r in oc.recipient_list(m, 1))
+        s["DirectToMe"] = oc.to_me(row, me, ns, open_if_needed=True)  # the item is open already for the body
         s["WaitingDays"] = (now - t).days
         s["TheirLaterNudges"] = sum(1 for x in later if x[0] > t and x[1] == frm)
         out.append(s)
@@ -99,30 +108,27 @@ def run(a, ns=None):
     days_sent = a.days if a.days is not None else 3
     days_received = a.days if a.days is not None else 2
 
-    inbox_mails = _scan(_mail_folders(ns, a, "inbox"), since, a.maxitems)
-    sent_mails = _scan(_mail_folders(ns, a, "sent"), since, a.maxitems)
+    inbox_rows = _scan(_mail_folders(ns, a, "inbox"), since, a.maxitems, extra=("ToMe",))
+    sent_rows = _scan(_mail_folders(ns, a, "sent"), since, a.maxitems)
 
-    # conversation -> list of (time, from_address, mail)
+    # conversation -> list of (time, from_address, row)
     conv = {}
-    for m in inbox_mails + sent_mails:
-        conv.setdefault(_conv_key(m), []).append((oc.to_datetime(m.ReceivedTime), oc.sender_smtp(m).lower(), m))
+    for row in inbox_rows + sent_rows:
+        if row.received is not None:
+            conv.setdefault(_conv_key(row), []).append((row.received, oc.sender_address(row, ns), row))
     for k in conv:
         conv[k].sort(key=lambda t: t[0])
 
-    def finish(rows):
-        rows.sort(key=lambda x: -x["WaitingDays"])
-        return rows[:a.max]
-
     out = {"Direction": a.direction, "Lookback": a.lookback, "Me": sorted(me),
-           "Scanned": {"Inbox": len(inbox_mails), "Sent": len(sent_mails)}}
+           "Scanned": {"Inbox": len(inbox_rows), "Sent": len(sent_rows)}}
     if a.direction in ("sent", "both"):
-        rows = finish(_waiting_sent(sent_mails, conv, me, now - dt.timedelta(days=days_sent), now, a))
+        rows = _waiting_sent(sent_rows, conv, me, now - dt.timedelta(days=days_sent), now, a, ns)
         if a.direction == "sent":
             out.update({"Days": days_sent, "Count": len(rows), "Results": rows})
         else:
             out["Sent"] = {"Days": days_sent, "Count": len(rows), "Results": rows}
     if a.direction in ("received", "both"):
-        rows = finish(_waiting_received(inbox_mails, conv, me, now - dt.timedelta(days=days_received), now, a))
+        rows = _waiting_received(inbox_rows, conv, me, now - dt.timedelta(days=days_received), now, a, ns)
         if a.direction == "received":
             out.update({"Days": days_received, "Count": len(rows), "Results": rows})
         else:
@@ -147,6 +153,7 @@ def parser():
 
 def main(argv=None):
     a = parser().parse_args(argv)
+    oc.apply_settings(a)
     oc.write_json(run(a), a.out_file)
 
 
